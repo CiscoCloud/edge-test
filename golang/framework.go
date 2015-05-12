@@ -30,6 +30,7 @@ import (
     "github.com/CiscoCloud/edge-test/golang/transform"
 )
 
+var instances = flag.Int("instances", 1, "Number of tasks to run.")
 var artifactServerHost = flag.String("artifact.host", "master", "Binding host for artifact server.")
 var artifactServerPort = flag.Int("artifact.port", 6666, "Binding port for artifact server.")
 var master = flag.String("master", "127.0.0.1:5050", "Mesos Master address <ip:port>.")
@@ -62,7 +63,14 @@ func main() {
         Name: proto.String("Go LogLine Transform Framework"),
     }
 
-    transformScheduler := transform.NewTransformScheduler()
+    schedulerConfig := transform.NewTransformSchedulerConfig()
+    schedulerConfig.ArtifactServerHost = *artifactServerHost
+    schedulerConfig.ArtifactServerPort = *artifactServerPort
+    schedulerConfig.ExecutorArchiveName = *executorArchiveName
+    schedulerConfig.ExecutorBinaryName = *executorBinaryName
+    schedulerConfig.Instances = *instances
+
+    transformScheduler := transform.NewTransformScheduler(schedulerConfig)
     driverConfig := scheduler.DriverConfig{
         Scheduler: transformScheduler,
         Framework: frameworkInfo,
