@@ -22,18 +22,61 @@ import (
     "fmt"
     "flag"
     "github.com/CiscoCloud/edge-test/golang/transform"
+    "os"
+    "strings"
 )
+
+var port = flag.Int("port", 0, "Port to bind to")
+var format = flag.String("format", "json", "Format of messages to expect. 'json', 'avro' or 'proto'")
+var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
+var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var topic = flag.String("topic", "", "Topic to produce transformed data to.")
 
 func parseAndValidateExecutorArgs() {
     flag.Parse()
+
+    switch *format {
+        case "json", "avro", "proto":
+        default: {
+            fmt.Println("Invalid format specified.")
+            os.Exit(1)
+        }
+    }
+
+    if *schemaRegistryUrl == "" {
+        fmt.Println("schema.registry flag is required.")
+        os.Exit(1)
+    }
+
+    if *brokerList == "" {
+        fmt.Println("broker.list flag is required.")
+        os.Exit(1)
+    }
+
+    if *topic == "" {
+        fmt.Println("topic flag is required.")
+        os.Exit(1)
+    }
+
+    if *port == 0 {
+        fmt.Println("port flag is required.")
+        os.Exit(1)
+    }
 }
 
 func main() {
     parseAndValidateExecutorArgs()
     fmt.Println("Starting Transform Executor")
 
+    executorConfig := transform.NewTransformExecutorConfig()
+    executorConfig.Format = *format
+    executorConfig.SchemaRegistryUrl = *schemaRegistryUrl
+    executorConfig.BrokerList = strings.Split(*brokerList, ",")
+    executorConfig.Topic = *topic
+    executorConfig.Port = *port
+
     driverConfig := executor.DriverConfig {
-        Executor: transform.NewTransformExecutor(),
+        Executor: transform.NewTransformExecutor(executorConfig),
     }
     driver, err := executor.NewMesosExecutorDriver(driverConfig)
 

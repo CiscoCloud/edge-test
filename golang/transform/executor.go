@@ -19,16 +19,41 @@ import (
     "github.com/mesos/mesos-go/executor"
     mesos "github.com/mesos/mesos-go/mesosproto"
     "fmt"
+    "net/http"
+    kafka "github.com/stealthly/go_kafka_client"
+    "github.com/CiscoCloud/edge-test/golang/avro"
+    "io/ioutil"
+    "encoding/json"
     "time"
 )
 
+type TransformExecutorConfig struct {
+    Format string
+    BrokerList []string
+    SchemaRegistryUrl string
+    Topic string
+    Port int
+}
+
+func NewTransformExecutorConfig() *TransformExecutorConfig {
+    return &TransformExecutorConfig {
+        Format: "json",
+    }
+}
+
 type TransformExecutor struct {
-    
+    config *TransformExecutorConfig
+    incoming chan *avro.LogLine
+    producer kafka.Producer
+    close chan bool
 }
 
 // Creates a new TransformExecutor with a given config.
-func NewTransformExecutor() *TransformExecutor {
+func NewTransformExecutor(config *TransformExecutorConfig) *TransformExecutor {
     return &TransformExecutor{
+        config: config,
+        incoming: make(chan *avro.LogLine),
+        close: make(chan bool),
     }
 }
 
@@ -66,7 +91,10 @@ func (this *TransformExecutor) LaunchTask(driver executor.ExecutorDriver, taskIn
     }
 
     go func() {
-        time.Sleep(30 * time.Second)
+        this.startHTTPServer()
+        this.startProducer()
+        <-this.close
+        close(this.incoming)
 
         // finish task
         fmt.Printf("Finishing task %s\n", taskInfo.GetName())
@@ -85,6 +113,11 @@ func (this *TransformExecutor) LaunchTask(driver executor.ExecutorDriver, taskIn
 // Invoked when a task running within this executor has been killed.
 func (this *TransformExecutor) KillTask(_ executor.ExecutorDriver, taskId *mesos.TaskID) {
     fmt.Println("Kill task")
+
+    select {
+    case this.close <- true:
+    default:
+    }
 }
 
 // mesos.Executor interface method.
@@ -97,10 +130,84 @@ func (this *TransformExecutor) FrameworkMessage(driver executor.ExecutorDriver, 
 // Invoked when the executor should terminate all of its currently running tasks.
 func (this *TransformExecutor) Shutdown(executor.ExecutorDriver) {
     fmt.Println("Shutting down the executor")
+
+    select {
+    case this.close <- true:
+    default:
+    }
 }
 
 // mesos.Executor interface method.
 // Invoked when a fatal error has occured with the executor and/or executor driver.
 func (this *TransformExecutor) Error(driver executor.ExecutorDriver, err string) {
     fmt.Printf("Got error message: %s\n", err)
+}
+
+func (this *TransformExecutor) startHTTPServer() {
+    var handleFunc func (http.ResponseWriter, *http.Request)
+    switch this.config.Format {
+        case "json": handleFunc = this.jsonHandleFunc
+        case "avro": handleFunc = this.avroHandleFunc
+        case "proto": handleFunc = this.protoHandleFunc
+    }
+
+    http.HandleFunc("/", handleFunc)
+
+    go http.ListenAndServe(fmt.Sprintf(":%d", this.config.Port), nil)
+}
+
+func (this *TransformExecutor) startProducer() {
+    producerConfig := kafka.DefaultProducerConfig()
+
+    producerConfig.KeyEncoder = kafka.NewKafkaAvroEncoder(this.config.SchemaRegistryUrl)
+    producerConfig.ValueEncoder = producerConfig.KeyEncoder
+    producerConfig.BrokerList = this.config.BrokerList
+
+    this.producer = kafka.NewSaramaProducer(producerConfig)
+    go this.produceRoutine()
+}
+
+func (this *TransformExecutor) produceRoutine() {
+    for msg := range this.incoming {
+        msg.Timings = append(msg.Timings, this.timing("sent"))
+        this.producer.Input() <- &kafka.ProducerMessage{Topic: this.config.Topic, Value: msg}
+    }
+}
+
+func (this *TransformExecutor) jsonHandleFunc(w http.ResponseWriter, r *http.Request) {
+    timing := this.timing("received")
+    body, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        panic(err)
+    }
+
+    logLine := avro.NewLogLine()
+    if err = json.Unmarshal(body, logLine); err != nil {
+        panic(err)
+    }
+
+    // golang's json numbers are always float64's :(
+    if logLine.Logtypeid != nil {
+        fmt.Println("changing logtypeid type")
+        logLine.Logtypeid = int64(logLine.Logtypeid.(float64))
+    }
+
+    logLine.Timings = append(logLine.Timings, timing)
+
+    this.incoming <- logLine
+}
+
+func (this *TransformExecutor) avroHandleFunc(w http.ResponseWriter, r *http.Request) {
+    //TODO
+}
+
+func (this *TransformExecutor) protoHandleFunc(w http.ResponseWriter, r *http.Request) {
+    //TODO
+}
+
+func (this *TransformExecutor) timing(name string) *avro.KV {
+    timing := avro.NewKV()
+    timing.Key = "received"
+    timing.Value = time.Now().Unix() * 1000
+    return timing
 }

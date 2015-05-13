@@ -36,9 +36,36 @@ var artifactServerPort = flag.Int("artifact.port", 6666, "Binding port for artif
 var master = flag.String("master", "127.0.0.1:5050", "Mesos Master address <ip:port>.")
 var executorArchiveName = flag.String("executor.archive", "executor.zip", "Executor archive name. Absolute or relative path are both ok.")
 var executorBinaryName = flag.String("executor.name", "executor", "Executor binary name contained in archive.")
+var format = flag.String("format", "json", "Format of messages to expect. 'json', 'avro' or 'proto'")
+var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
+var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var topic = flag.String("topic", "", "Topic to produce transformed data to.")
 
 func parseAndValidateSchedulerArgs() {
     flag.Parse()
+
+    switch *format {
+        case "json", "avro", "proto":
+        default: {
+            fmt.Println("Invalid format specified.")
+            os.Exit(1)
+        }
+    }
+
+    if *schemaRegistryUrl == "" {
+        fmt.Println("schema.registry flag is required.")
+        os.Exit(1)
+    }
+
+    if *brokerList == "" {
+        fmt.Println("broker.list flag is required.")
+        os.Exit(1)
+    }
+
+    if *topic == "" {
+        fmt.Println("topic flag is required.")
+        os.Exit(1)
+    }
 }
 
 func startArtifactServer() {
@@ -69,6 +96,10 @@ func main() {
     schedulerConfig.ExecutorArchiveName = *executorArchiveName
     schedulerConfig.ExecutorBinaryName = *executorBinaryName
     schedulerConfig.Instances = *instances
+    schedulerConfig.Format = *format
+    schedulerConfig.SchemaRegistryUrl = *schemaRegistryUrl
+    schedulerConfig.BrokerList = *brokerList
+    schedulerConfig.Topic = *topic
 
     transformScheduler := transform.NewTransformScheduler(schedulerConfig)
     driverConfig := scheduler.DriverConfig{
