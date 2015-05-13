@@ -1,0 +1,10 @@
+{
+     "type": "record",
+     "namespace": "com.example",
+     "doc": "A persons first and last names",
+     "name": "FullName",
+     "fields": [
+       { "name": "first", "type": "string", "doc": "first name" },
+       { "name": "last", "type": "string", "default": "bar" }
+     ]
+}

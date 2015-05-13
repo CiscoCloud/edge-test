@@ -1,0 +1,14 @@
+{
+    "type": "record",
+    "name": "TestRecord",
+    "namespace": "me.lyh.parquet.avro.schema",
+    "doc": "Record for testing",
+    "fields": [
+        {"name": "int_field", "type": ["int", "null"]},
+        {"name": "long_field", "type": ["long", "null"]},
+        {"name": "float_field", "type": ["float", "null"]},
+        {"name": "double_field", "type": ["double", "null"]},
+        {"name": "boolean_field", "type": ["boolean", "null"]},
+        {"name": "string_field", "type": ["string", "null"]}
+    ]
+}

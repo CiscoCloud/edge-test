@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "Employee",
+  "fields": [
+      {"name": "name", "type": "string"},
+      {"name": "boss", "type": ["Employee","null"]}
+  ]
+}

@@ -1,0 +1,59 @@
+Writing struct: AuthnRequestType
+Writing struct: NameIDType
+Writing struct: SignatureType
+Writing struct: SignedInfoType
+Writing struct: CanonicalizationMethodType
+Writing struct: SignatureMethodType
+Writing struct: ReferenceType
+Writing struct: TransformsType
+Writing struct: TransformType
+Writing struct: TransformType
+TransformType already exists, skipping
+Writing struct: DigestMethodType
+Writing struct: ReferenceType
+ReferenceType already exists, skipping
+Writing struct: SignatureValueType
+Writing struct: KeyInfoType
+Writing struct: KeyValueType
+Writing struct: DSAKeyValueType
+Writing struct: RSAKeyValueType
+Writing struct: RetrievalMethodType
+Writing struct: X509DataType
+Writing struct: X509IssuerSerialType
+Writing struct: PGPDataType
+Writing struct: SPKIDataType
+Writing struct: ObjectType
+Writing struct: ObjectType
+ObjectType already exists, skipping
+Writing struct: ExtensionsType
+Writing struct: SubjectType
+Writing struct: BaseIDAbstractType
+Writing struct: EncryptedElementType
+Writing struct: EncryptedDataType
+Writing struct: EncryptionMethodType
+Writing struct: CipherDataType
+Writing struct: CipherReferenceType
+Writing struct: EncryptionPropertiesType
+Writing struct: EncryptionPropertyType
+Writing struct: EncryptionPropertyType
+EncryptionPropertyType already exists, skipping
+Writing struct: EncryptedKeyType
+Writing struct: Type0
+Writing struct: EncryptedKeyType
+EncryptedKeyType already exists, skipping
+Writing struct: SubjectConfirmationType
+Writing struct: SubjectConfirmationDataType
+Writing struct: SubjectConfirmationType
+SubjectConfirmationType already exists, skipping
+Writing struct: NameIDPolicyType
+Writing struct: ConditionsType
+Writing struct: ConditionAbstractType
+Writing struct: AudienceRestrictionType
+Writing struct: OneTimeUseType
+Writing struct: ProxyRestrictionType
+Writing struct: RequestedAuthnContextType
+Writing struct: ScopingType
+Writing struct: IDPListType
+Writing struct: IDPEntryType
+Writing struct: IDPEntryType
+IDPEntryType already exists, skipping
