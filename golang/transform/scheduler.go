@@ -49,9 +49,6 @@ type TransformSchedulerConfig struct {
     // Number of task instances to run.
     Instances int
 
-    // Message format to expect.
-    Format string
-
     // Avro Schema Registry url.
     SchemaRegistryUrl string
 
@@ -239,8 +236,8 @@ func (this *TransformScheduler) createExecutor(instanceId int32, port uint64) *m
         Name:       proto.String("LogLine Transform Executor"),
         Source:     proto.String("cisco"),
         Command: &mesos.CommandInfo{
-            Value: proto.String(fmt.Sprintf("./%s --format %s --schema.registry %s --broker.list %s --topic %s --port %d",
-                this.config.ExecutorBinaryName, this.config.Format, this.config.SchemaRegistryUrl, this.config.BrokerList, this.config.Topic, port)),
+            Value: proto.String(fmt.Sprintf("./%s --schema.registry %s --broker.list %s --topic %s --port %d",
+                this.config.ExecutorBinaryName, this.config.SchemaRegistryUrl, this.config.BrokerList, this.config.Topic, port)),
             Uris:  []*mesos.CommandInfo_URI{&mesos.CommandInfo_URI{
                 Value: proto.String(fmt.Sprintf("http://%s:%d/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, path[len(path)-1])),
                 Extract: proto.Bool(true),

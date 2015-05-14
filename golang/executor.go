@@ -27,21 +27,12 @@ import (
 )
 
 var port = flag.Int("port", 0, "Port to bind to")
-var format = flag.String("format", "json", "Format of messages to expect. 'json', 'avro' or 'proto'")
 var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
 var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
 var topic = flag.String("topic", "", "Topic to produce transformed data to.")
 
 func parseAndValidateExecutorArgs() {
     flag.Parse()
-
-    switch *format {
-        case "json", "avro", "proto":
-        default: {
-            fmt.Println("Invalid format specified.")
-            os.Exit(1)
-        }
-    }
 
     if *schemaRegistryUrl == "" {
         fmt.Println("schema.registry flag is required.")
@@ -69,7 +60,6 @@ func main() {
     fmt.Println("Starting Transform Executor")
 
     executorConfig := transform.NewTransformExecutorConfig()
-    executorConfig.Format = *format
     executorConfig.SchemaRegistryUrl = *schemaRegistryUrl
     executorConfig.BrokerList = strings.Split(*brokerList, ",")
     executorConfig.Topic = *topic
