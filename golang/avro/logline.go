@@ -8,6 +8,7 @@ type LogLine struct {
 	Tag       map[string]string
 	Logtypeid interface{}
 	Timings   []*KV
+	Size      interface{}
 }
 
 func NewLogLine() *LogLine {
@@ -100,6 +101,14 @@ var _LogLine_schema, _LogLine_schema_err = avro.ParseSchema(`{
                         ]
                     }
                 }
+            ]
+        },
+        {
+            "name": "size",
+            "default": null,
+            "type": [
+                "null",
+                "long"
             ]
         }
     ]

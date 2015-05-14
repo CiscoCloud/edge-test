@@ -177,6 +177,7 @@ func (this *TransformExecutor) handleFunc() func(http.ResponseWriter, *http.Requ
 		}
 
 		logLine := avro.NewLogLine()
+		logLine.Size = int64(len(body))
 		contentType := r.Header.Get("Content-Type")
 		switch contentType {
 		case "application/json":
@@ -214,6 +215,9 @@ func (this *TransformExecutor) handleJson(body []byte, logLine *avro.LogLine) er
 	// golang's json numbers are always float64's :(
 	if logLine.Logtypeid != nil {
 		logLine.Logtypeid = int64(logLine.Logtypeid.(float64))
+	}
+	if logLine.Size != nil {
+		logLine.Size = int64(logLine.Size.(float64))
 	}
 
 	return nil

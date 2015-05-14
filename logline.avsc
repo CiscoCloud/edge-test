@@ -51,6 +51,11 @@
                 }
             ],
             "default": null
+        },
+        {
+            "name": "size",
+            "type": ["null", "long"],
+            "default": null
         }
     ]
 }
