@@ -5,6 +5,7 @@ import org.apache.log4j.*;
 import java.io.File;
 
 public class Main {
+    private static final Logger logger = Logger.getLogger(Main.class);
     private static File jmeterDistro = jmeterDistro();
 
     public static void main(String[] args) throws Exception {
@@ -15,11 +16,13 @@ public class Main {
         server.setJmeterDistro(jmeterDistro);
         server.start();
 
-        Agents app = new Agents();
-        app.setApiUrl("http://192.168.3.1:5000");
-        app.setMarathonUrl("http://master:8080");
-        app.setInstances(1);
-        app.submit();
+        Agents agents = new Agents();
+        agents.setApiUrl("http://192.168.3.1:5000");
+        agents.setMarathonUrl("http://master:8080");
+        agents.setInstances(3);
+        agents.start();
+
+        logger.info("Agents listening on " + Util.join(agents.getEndpoints(), ","));
     }
 
 
