@@ -26,8 +26,8 @@ public class HttpServer {
     public void setPort(int port) { this.port = port; }
 
     public File getJmeterDistro() { return jmeterDistro; }
-    public void setJmeterDistro(File jmeterDistro) { this.jmeterDistro = jmeterDistro;
-    }
+    public void setJmeterDistro(File jmeterDistro) { this.jmeterDistro = jmeterDistro; }
+
 
     public synchronized void start() throws Exception {
         if (server != null) throw new IllegalStateException("started");
@@ -104,7 +104,8 @@ public class HttpServer {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
             String uri = request.getRequestURI();
-            if (uri.startsWith("/jmeter")) downloadFile(jmeterDistro, response);
+            if (uri.startsWith("/jmeter") && uri.endsWith(".zip")) downloadFile(jmeterDistro, response);
+            else if (uri.startsWith("/jmeter") && uri.endsWith(".sh")) downloadFile(Agents.script, response);
             else response.sendError(404);
         }
 
@@ -112,20 +113,7 @@ public class HttpServer {
             response.setContentType("application/zip");
             response.setHeader("Content-Length", "" + file.length());
             response.setHeader("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"");
-            copyAndClose(new FileInputStream(file), response.getOutputStream());
+            Util.copyAndClose(new FileInputStream(file), response.getOutputStream());
         }
-
-        private void copyAndClose(InputStream in, OutputStream out) throws IOException {
-            byte[] buffer = new byte[16 * 1024];
-            int actuallyRead = 0;
-
-            try(InputStream _in = in; OutputStream _out = out) {
-                while (actuallyRead != -1) {
-                    actuallyRead = in.read(buffer);
-                    if (actuallyRead != -1) out.write(buffer, 0, actuallyRead);
-                }
-            }
-        }
-
     }
 }
