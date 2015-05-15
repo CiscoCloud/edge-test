@@ -62,8 +62,8 @@ public class Cli {
 
     private static void handleStatus(String[] args, boolean help) throws IOException {
         OptionParser parser = new OptionParser();
-        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
-        parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
+        parser.accepts("marathon", "marathon url (http://master:8080)").withRequiredArg().required().ofType(String.class);
+        parser.accepts("app", "marathon app id").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
 
         if (help) {
             out.println("Print servers status\nUsage: status [options]\n");
@@ -91,13 +91,13 @@ public class Cli {
         Marathon.JmeterServers servers = new Marathon.JmeterServers();
 
         OptionParser parser = new OptionParser();
-        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
-        parser.accepts("download").withRequiredArg().required().ofType(String.class);
+        parser.accepts("marathon", "marathon url (http://master:8080)").withRequiredArg().required().ofType(String.class);
+        parser.accepts("download", "url to download jmeter (http://192.168.3.1:5000)").withRequiredArg().required().ofType(String.class);
 
-        parser.accepts("app").withOptionalArg().ofType(String.class).defaultsTo(servers.app);
-        parser.accepts("instances").withOptionalArg().ofType(Integer.class).defaultsTo(servers.instances);
-        parser.accepts("cpus").withOptionalArg().ofType(Double.class).defaultsTo(servers.cpus);
-        parser.accepts("mem").withOptionalArg().ofType(Integer.class).defaultsTo(servers.mem);
+        parser.accepts("app", "marathon app id").withOptionalArg().ofType(String.class).defaultsTo(servers.app);
+        parser.accepts("instances", "number of servers").withOptionalArg().ofType(Integer.class).defaultsTo(servers.instances);
+        parser.accepts("cpus", "amount of cpu to use").withOptionalArg().ofType(Double.class).defaultsTo(servers.cpus);
+        parser.accepts("mem", "amount of memory to use").withOptionalArg().ofType(Integer.class).defaultsTo(servers.mem);
 
         if (help) {
             out.println("Start servers\nUsage: start [options]\n");
@@ -139,8 +139,8 @@ public class Cli {
 
     private static void handleStop(String[] args, boolean help) throws IOException {
         OptionParser parser = new OptionParser();
-        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
-        parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
+        parser.accepts("marathon", "marathon url (http://master:8080)").withRequiredArg().required().ofType(String.class);
+        parser.accepts("app", "marathon app id").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
 
         if (help) {
             out.println("Stop servers\nUsage: stop [options]\n");
