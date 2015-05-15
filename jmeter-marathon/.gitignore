@@ -1,6 +1,8 @@
+.gradle
+
 .idea
 .libs
 todo.txt
 jmeter-marathon.iml
-
+jmeter-marathon.jar
 apache-jmeter*.zip
