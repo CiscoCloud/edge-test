@@ -44,7 +44,7 @@ object Main extends App {
   val cassandraConnector = CassandraConnector(sparkConfig)
   cassandraConnector.withSessionDo(session => {
     session.execute("CREATE KEYSPACE IF NOT EXISTS spark_analysis WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
-    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.aggregations(eventName text, second int, operation text, value int, PRIMARY KEY(eventName, second))")
+    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventName text, second int, operation text, value int, PRIMARY KEY(eventName, second))")
   })
 
   val consumerConfig = Map("metadata.broker.list" -> appConfig.brokerList,
@@ -73,24 +73,26 @@ object Main extends App {
       import scala.collection.JavaConversions._
       val timings = record.get("timings").asInstanceOf[GenericData.Array[Record]]
       timings.combinations(2).map(entry => {
-        (entry.head.get("eventName").asInstanceOf[String] + "-" + entry.last.get("eventName").asInstanceOf[String], 
-          entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long])
+        (entry.head.get("eventName").asInstanceOf[String] + "-" + entry.last.get("eventName").asInstanceOf[String],
+          entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long],
+          entry.last.get("ntpstatus").asInstanceOf[Long] - entry.head.get("ntpstatus").asInstanceOf[Long])
       }).toList
     }).reduce((acc, value) => {
       acc ++ value
     }).map(entry => {
       entry.groupBy(_._1).map { case (key, values) => {
         val timings = values.map(_._2)
-        Event(key, 0, "avg%d%s".format(durationValue, durationUnit), timings.sum / timings.size)
+        val ntpstatus = values.map(_._3)
+        Event(key, ntpstatus.sum / ntpstatus.size, "avg%d%s".format(durationValue, durationUnit), timings.sum / timings.size)
       }
       }
     }).foreachRDD(rdd => {
-      rdd.saveToCassandra("spark_analysis", "aggregations")
+      rdd.saveToCassandra("spark_analysis", "events")
     })
   }
   
   def windowDuration(unit: String, durationValue: Long): Duration = unit match {
-    case "second" => Seconds(durationValue) 
+    case "second" => Seconds(durationValue)
     case "minute" => Minutes(durationValue)
   }
 }
