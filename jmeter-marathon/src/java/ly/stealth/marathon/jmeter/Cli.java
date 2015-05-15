@@ -18,9 +18,18 @@ public class Cli {
     public static void main(String[] args) throws Exception {
         initLogging();
 
-        if (args.length == 0) {
-            out.println("Usage: start|stop|status");
+        try { handle(args); }
+        catch (Error error) {
+            out.println();
+            err.println("Error: " + Util.uncapitalize(error.getMessage()));
             System.exit(1);
+        }
+    }
+
+    private static void handle(String... args) throws Exception {
+        if (args.length == 0) {
+            handleHelp(null);
+            throw new Error("Command required");
         }
 
         String command = args[0];
@@ -30,8 +39,12 @@ public class Cli {
             case "status": handleStatus(args); break;
             case "start": handleStart(args); break;
             case "stop": handleStop(args); break;
-            default: err.println("Unsupported command " + command); System.exit(1);
+            default: handleHelp(null); throw new Error("Unsupported command");
         }
+    }
+
+    private static void handleHelp(String command) {
+        out.println("Usage: start|stop|status");
     }
 
     private static void handleStatus(String... args) throws IOException {
@@ -44,8 +57,7 @@ public class Cli {
             options = parser.parse(args);
         } catch (OptionException e) {
             parser.printHelpOn(out);
-            err.println(e.getMessage());
-            System.exit(1);
+            throw new Error(e.getMessage());
         }
 
         Marathon.url = (String) options.valueOf("marathon");
@@ -73,8 +85,7 @@ public class Cli {
             options = parser.parse(args);
         } catch (OptionException e) {
             parser.printHelpOn(out);
-            err.println(e.getMessage());
-            System.exit(1);
+            throw new Error(e.getMessage());
         }
 
         Marathon.url = (String) options.valueOf("marathon");
@@ -91,10 +102,8 @@ public class Cli {
         server.setJmeterDistro(jmeterDistro());
         server.start();
 
-        if (Marathon.hasApp(servers.app)) {
-            err.println("App \"" + servers.app + "\" is already running");
-            System.exit(1);
-        }
+        if (Marathon.hasApp(servers.app))
+            throw new Error("App \"" + servers.app + "\" is already running");
 
         out.println("Starting app \"" + servers.app + "\" ...");
         Marathon.startServers(servers);
@@ -113,17 +122,14 @@ public class Cli {
             options = parser.parse(args);
         } catch (OptionException e) {
             parser.printHelpOn(out);
-            err.println(e.getMessage());
-            System.exit(1);
+            throw new Error(e.getMessage());
         }
 
         Marathon.url = (String) options.valueOf("marathon");
         String app = (String) options.valueOf("app");
 
-        if (!Marathon.hasApp(app)) {
-            err.println("App \"" + app + "\" is not started");
-            System.exit(1);
-        }
+        if (!Marathon.hasApp(app))
+            throw new Error("App \"" + app + "\" is not started");
 
         out.println("Stopping app \"" + app + "\" ...");
         Marathon.stopApp(app);
@@ -150,6 +156,10 @@ public class Cli {
         for (File file : new File(".").listFiles())
             if (file.getName().matches(mask)) return file;
 
-        throw new IllegalStateException("No " + mask + " found in .");
+        throw new IllegalStateException("No " + mask + " found in . folder");
+    }
+
+    public static class Error extends java.lang.Error {
+        public Error(String message) { super(message); }
     }
 }
