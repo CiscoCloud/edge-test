@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class Util {
+    @SuppressWarnings("UnusedDeclaration")
     static void copyAndClose(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[16 * 1024];
         int actuallyRead = 0;

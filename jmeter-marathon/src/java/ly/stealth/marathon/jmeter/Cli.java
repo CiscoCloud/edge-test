@@ -36,23 +36,42 @@ public class Cli {
         args = Arrays.asList(args).subList(1, args.length).toArray(new String[args.length - 1]);
 
         switch (command) {
-            case "status": handleStatus(args); break;
-            case "start": handleStart(args); break;
-            case "stop": handleStop(args); break;
+            case "help": handleHelp(args.length > 0 ? args[0] : null); break;
+            case "status": handleStatus(args, false); break;
+            case "start": handleStart(args, false); break;
+            case "stop": handleStop(args, false); break;
             default: handleHelp(null); throw new Error("Unsupported command");
         }
     }
 
-    private static void handleHelp(String command) {
-        out.println("Usage: start|stop|status");
+    private static void handleHelp(String command) throws Exception {
+        if (command == null) {
+            out.println("Usage: help {cmd}|start|stop|status");
+            return;
+        }
+
+        switch (command) {
+            case "help": out.println("Print general or command-specific help\nUsage: help {command}"); break;
+            case "status": handleStatus(null, true); break;
+            case "start": handleStart(null, true); break;
+            case "stop": handleStop(null, true); break;
+            default: handleHelp(null); throw new Error("Unsupported command");
+        }
+
     }
 
-    private static void handleStatus(String... args) throws IOException {
+    private static void handleStatus(String[] args, boolean help) throws IOException {
         OptionParser parser = new OptionParser();
         parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
         parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
 
-        OptionSet options = null;
+        if (help) {
+            out.println("Print servers status\nUsage: status [options]\n");
+            parser.printHelpOn(out);
+            return;
+        }
+
+        OptionSet options;
         try {
             options = parser.parse(args);
         } catch (OptionException e) {
@@ -68,7 +87,7 @@ public class Cli {
         else out.println("App \"" + app + "\"" + " is running\nServers listening on " + Util.join(endpoints, ","));
     }
 
-    private static void handleStart(String... args) throws Exception {
+    private static void handleStart(String[] args, boolean help) throws Exception {
         Marathon.JmeterServers servers = new Marathon.JmeterServers();
 
         OptionParser parser = new OptionParser();
@@ -80,7 +99,13 @@ public class Cli {
         parser.accepts("cpus").withOptionalArg().ofType(Double.class).defaultsTo(servers.cpus);
         parser.accepts("mem").withOptionalArg().ofType(Integer.class).defaultsTo(servers.mem);
 
-        OptionSet options = null;
+        if (help) {
+            out.println("Start servers\nUsage: start [options]\n");
+            parser.printHelpOn(out);
+            return;
+        }
+
+        OptionSet options;
         try {
             options = parser.parse(args);
         } catch (OptionException e) {
@@ -112,12 +137,18 @@ public class Cli {
         server.stop();
     }
 
-    private static void handleStop(String... args) throws IOException {
+    private static void handleStop(String[] args, boolean help) throws IOException {
         OptionParser parser = new OptionParser();
         parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
         parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
 
-        OptionSet options = null;
+        if (help) {
+            out.println("Stop servers\nUsage: stop [options]\n");
+            parser.printHelpOn(out);
+            return;
+        }
+
+        OptionSet options;
         try {
             options = parser.parse(args);
         } catch (OptionException e) {
