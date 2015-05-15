@@ -87,7 +87,7 @@
 		},
 		{
 			"ImportPath": "github.com/stealthly/go-avro",
-			"Rev": "f9c9dd4750b8fc89ea03e7a70df0519b205a50cb"
+			"Rev": "d4fd4c5cf7fa97a830ff0704f86cd9b9591861e6"
 		},
 		{
 			"ImportPath": "github.com/stealthly/go_kafka_client",

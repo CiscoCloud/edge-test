@@ -10,7 +10,7 @@ message LogLine
 
 	message Timing
 	{
-		required string key = 1;
+		required string eventName = 1;
 		required int64 value = 2;
 	}
 

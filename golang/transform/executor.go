@@ -216,9 +216,6 @@ func (this *TransformExecutor) handleJson(body []byte, logLine *avro.LogLine) er
 	if logLine.Logtypeid != nil {
 		logLine.Logtypeid = int64(logLine.Logtypeid.(float64))
 	}
-	if logLine.Size != nil {
-		logLine.Size = int64(logLine.Size.(float64))
-	}
 
 	return nil
 }
@@ -247,10 +244,10 @@ func (this *TransformExecutor) protoToAvroLogLine(protoLogLine *pb.LogLine, logL
 		logLine.Tag[tag.GetKey()] = tag.GetValue()
 	}
 
-	logLine.Timings = make([]*avro.KV, 0)
+	logLine.Timings = make([]*avro.Timing, 0)
 	for _, timing := range protoLogLine.GetTimings() {
-		kv := avro.NewKV()
-		kv.Key = timing.GetKey()
+		kv := avro.NewTiming()
+		kv.EventName = timing.GetEventName()
 		kv.Value = timing.GetValue()
 		logLine.Timings = append(logLine.Timings, kv)
 	}
@@ -258,9 +255,10 @@ func (this *TransformExecutor) protoToAvroLogLine(protoLogLine *pb.LogLine, logL
 	return logLine
 }
 
-func (this *TransformExecutor) timing(name string) *avro.KV {
-	timing := avro.NewKV()
-	timing.Key = name
+func (this *TransformExecutor) timing(name string) *avro.Timing {
+	timing := avro.NewTiming()
+	timing.EventName = name
 	timing.Value = time.Now().Unix() * 1000
+    //TODO ntpstatus
 	return timing
 }

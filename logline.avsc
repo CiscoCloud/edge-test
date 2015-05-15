@@ -36,15 +36,20 @@
                     "type": "array",
                     "items": {
                     	"type": "record",
-    					"name": "KV",
+    					"name": "Timing",
     					"fields": [
     						{
-    							"name": "key",
+    							"name": "eventName",
     							"type": "string"
     						},
     						{
     							"name": "value",
     							"type": "long"
+    						},
+    						{
+    							"name": "ntpstatus",
+    							"type": ["null", "long"],
+    							"default": null
     						}
     					]
                     }

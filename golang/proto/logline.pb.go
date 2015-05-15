@@ -95,7 +95,7 @@ func (m *LogLine_Tag) GetValue() string {
 }
 
 type LogLine_Timing struct {
-	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
+	EventName        *string `protobuf:"bytes,1,req,name=eventName" json:"eventName,omitempty"`
 	Value            *int64  `protobuf:"varint,2,req,name=value" json:"value,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
@@ -104,9 +104,9 @@ func (m *LogLine_Timing) Reset()         { *m = LogLine_Timing{} }
 func (m *LogLine_Timing) String() string { return proto1.CompactTextString(m) }
 func (*LogLine_Timing) ProtoMessage()    {}
 
-func (m *LogLine_Timing) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
+func (m *LogLine_Timing) GetEventName() string {
+	if m != nil && m.EventName != nil {
+		return *m.EventName
 	}
 	return ""
 }
