@@ -18,28 +18,13 @@ import java.util.List;
 public class Marathon {
     public static String url = "http://master:8080";
 
-    public static boolean hasApp(String id) throws IOException {
-        return getApp(id) != null;
-    }
-
-    public static List<String> getEndpoints(String id) throws IOException {
-        @SuppressWarnings("unchecked") List<JSONObject> tasks = getTasks(id);
-        if (tasks == null) return Collections.emptyList();
-
-        List<String> endpoints = new ArrayList<>();
-        for (JSONObject task : tasks)
-            endpoints.add(task.get("host") + ":" + ((JSONArray)task.get("ports")).get(0));
-
-        return endpoints;
-    }
-
     public static void startServers(JmeterServers servers) throws IOException, InterruptedException {
         sendRequest("/v2/apps", "POST", servers.appJson());
 
         for(;;) {
             @SuppressWarnings("unchecked")
-            List<JSONObject> tasks = getTasks(servers.id);
-            if (tasks == null) throw new IllegalStateException("App " + servers.id + " not found");
+            List<JSONObject> tasks = getTasks(servers.app);
+            if (tasks == null) throw new IllegalStateException("App " + servers.app + " not found");
 
             int started = 0;
             for (JSONObject task : tasks)
@@ -50,17 +35,32 @@ public class Marathon {
         }
     }
 
-    public static void stopServers(String id) throws IOException {
-        sendRequest("/v2/apps/" + id, "DELETE", null);
+    public static boolean hasApp(String app) throws IOException {
+        return getApp(app) != null;
     }
 
-    private static JSONArray getTasks(String id) throws IOException {
-        JSONObject app = getApp(id);
-        return app != null ? (JSONArray) app.get("tasks") : null;
+    public static void stopApp(String app) throws IOException {
+        sendRequest("/v2/apps/" + app, "DELETE", null);
     }
 
-    private static JSONObject getApp(String id) throws IOException {
-        JSONObject response = sendRequest("/v2/apps/" + id, "GET", null);
+    public static List<String> getEndpoints(String app) throws IOException {
+        @SuppressWarnings("unchecked") List<JSONObject> tasks = getTasks(app);
+        if (tasks == null) return Collections.emptyList();
+
+        List<String> endpoints = new ArrayList<>();
+        for (JSONObject task : tasks)
+            endpoints.add(task.get("host") + ":" + ((JSONArray)task.get("ports")).get(0));
+
+        return endpoints;
+    }
+
+    private static JSONArray getTasks(String app) throws IOException {
+        JSONObject app_ = getApp(app);
+        return app_ != null ? (JSONArray) app_.get("tasks") : null;
+    }
+
+    private static JSONObject getApp(String app) throws IOException {
+        JSONObject response = sendRequest("/v2/apps/" + app, "GET", null);
         if (response == null) return null;
         return (JSONObject) response.get("app");
     }
@@ -98,17 +98,17 @@ public class Marathon {
     }
 
     public static class JmeterServers {
-        public static final String DEFAULT_ID = "jmeter";
+        public static final String DEFAULT_APP = "jmeter";
 
         public String downloadUrl;
-        public String id = DEFAULT_ID;
+        public String app = DEFAULT_APP;
         public int instances = 1;
 
         @SuppressWarnings("unchecked")
         private JSONObject appJson() {
             JSONObject obj = new JSONObject();
 
-            obj.put("id", id);
+            obj.put("id", app);
             obj.put("cpus", 1);
             obj.put("mem", 128);
 

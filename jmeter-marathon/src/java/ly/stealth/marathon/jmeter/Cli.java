@@ -33,13 +33,13 @@ public class Cli {
     }
 
     private static void handleStatus(List<String> args) throws IOException {
-        String id = Marathon.JmeterServers.DEFAULT_ID;
+        String app = Marathon.JmeterServers.DEFAULT_APP;
 
         Marathon.url = "http://master:8080";
-        List<String> endpoints = Marathon.getEndpoints(id);
+        List<String> endpoints = Marathon.getEndpoints(app);
 
-        if (endpoints.isEmpty()) out.println("App \"" + id + "\" is not started");
-        else out.println("App \"" + id + "\"" + " is running\nServers listening on " + Util.join(endpoints, ","));
+        if (endpoints.isEmpty()) out.println("App \"" + app + "\" is not started");
+        else out.println("App \"" + app + "\"" + " is running\nServers listening on " + Util.join(endpoints, ","));
     }
 
     private static void handleStart(List<String> args) throws Exception {
@@ -54,29 +54,29 @@ public class Cli {
         servers.downloadUrl = "http://192.168.3.1:5000";
         servers.instances = 2;
 
-        if (Marathon.hasApp(servers.id)) {
-            err.println("App \"" + servers.id + "\" is already running");
+        if (Marathon.hasApp(servers.app)) {
+            err.println("App \"" + servers.app + "\" is already running");
             System.exit(1);
         }
 
-        out.println("Starting app \"" + servers.id + "\" ...");
+        out.println("Starting app \"" + servers.app + "\" ...");
         Marathon.startServers(servers);
 
-        out.println("Servers listening on " + Util.join(Marathon.getEndpoints(servers.id), ","));
+        out.println("Servers listening on " + Util.join(Marathon.getEndpoints(servers.app), ","));
         server.stop();
     }
 
     private static void handleStop(List<String> args) throws IOException {
         Marathon.url = "http://master:8080";
-        String id = Marathon.JmeterServers.DEFAULT_ID;
+        String app = Marathon.JmeterServers.DEFAULT_APP;
 
-        if (!Marathon.hasApp(id)) {
-            err.println("App \"" + id + "\" is not started");
+        if (!Marathon.hasApp(app)) {
+            err.println("App \"" + app + "\" is not started");
             System.exit(1);
         }
 
-        out.println("Stopping app \"" + id + "\" ...");
-        Marathon.stopServers(id);
+        out.println("Stopping app \"" + app + "\" ...");
+        Marathon.stopApp(app);
     }
 
     private static void initLogging() {
