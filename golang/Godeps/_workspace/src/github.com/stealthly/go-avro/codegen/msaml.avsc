@@ -1,0 +1,34 @@
+{
+                  "name" : "Transforms",
+                  "type" : [ {
+                    "type" : "record",
+                    "name" : "TransformsType",
+                    "fields" : [ {
+                      "name" : "Transform",
+                      "type" : {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "record",
+                          "name" : "TransformType",
+                          "fields" : [ {
+                            "name" : "Algorithm",
+                            "type" : "string",
+                            "source" : "attribute Algorithm"
+                          }, {
+                            "name" : "others",
+                            "type" : {
+                              "type" : "map",
+                              "values" : "string"
+                            }
+                          }, {
+                            "name" : "XPath",
+                            "type" : [ "string", "null" ],
+                            "source" : "element XPath"
+                          } ]
+                        }
+                      },
+                      "source" : "element Transform"
+                    } ]
+                  }, "null" ],
+                  "source" : "element Transforms"
+                }

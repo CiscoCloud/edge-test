@@ -1,0 +1,46 @@
+{
+    "namespace": "com.rishav.avro",
+    "type": "record",
+    "name": "StudentActivity",
+    "fields": [
+        {
+            "name": "id",
+            "type": "string"
+        },
+        {
+            "name": "student_id",
+            "type": "int"
+        },
+        {
+            "name": "university_id",
+            "type": "int",
+            "default": 3
+        },
+        {
+            "name": "course_details",
+            "type": {
+                "name": "Activity",
+                "type": "record",
+                "fields": [
+                    {
+                        "doc": "foo bar",
+                        "name": "course_id",
+                        "type": "int"
+                    },
+                    {
+                        "name": "enroll_date",
+                        "type": "string"
+                    },
+                    {
+                        "name": "verb",
+                        "type": "string"
+                    },
+                    {
+                        "name": "result_score",
+                        "type": "double"
+                    }
+                ]
+            }
+        }
+    ]
+}

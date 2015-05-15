@@ -1,0 +1,10 @@
+{ "namespace": "org.energistics.avro",
+"type": "record",
+"name": "ChannelDataBlock",
+"doc" : "Sent data block from source to sink",
+"fields" : 
+	[
+		{"name": "channels", "type": {"type": "array", "items": "int"}},
+		{"name": "dataList", "type" : {"type": "array", "items": {"type": "array", "items": ["double", "float", "int", "long", "string", "org.energistics.avro.DateTime", "null" ]} }}
+	]
+}

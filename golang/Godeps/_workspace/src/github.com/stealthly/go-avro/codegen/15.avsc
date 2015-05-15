@@ -1,0 +1,12 @@
+{
+    "type": "record",
+    "name": "Account",
+    "namespace": "me.lyh.parquet.avro.schema",
+    "doc": "Record for an account",
+    "fields": [
+        {"name": "id", "type": "int"},
+        {"name": "type", "type": "string"},
+        {"name": "name", "type": "string"},
+        {"name": "amount", "type": "int"}
+    ]
+}
