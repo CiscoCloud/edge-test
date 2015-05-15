@@ -1,10 +1,13 @@
 package ly.stealth.marathon.jmeter;
 
+import joptsimple.OptionException;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import org.apache.log4j.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,17 +15,16 @@ import static java.lang.System.err;
 import static java.lang.System.out;
 
 public class Cli {
-    public static void main(String[] args_) throws Exception {
+    public static void main(String[] args) throws Exception {
         initLogging();
-        List<String> args = new ArrayList<>(Arrays.asList(args_));
 
-        if (args.size() == 0) {
+        if (args.length == 0) {
             out.println("Usage: start|stop|status");
             System.exit(1);
         }
 
-        String command = args.get(0);
-        args = args.subList(1, args.size());
+        String command = args[0];
+        args = Arrays.asList(args).subList(1, args.length).toArray(new String[args.length - 1]);
 
         switch (command) {
             case "status": handleStatus(args); break;
@@ -32,7 +34,7 @@ public class Cli {
         }
     }
 
-    private static void handleStatus(List<String> args) throws IOException {
+    private static void handleStatus(String... args) throws IOException {
         String app = Marathon.JmeterServers.DEFAULT_APP;
 
         Marathon.url = "http://master:8080";
@@ -42,17 +44,40 @@ public class Cli {
         else out.println("App \"" + app + "\"" + " is running\nServers listening on " + Util.join(endpoints, ","));
     }
 
-    private static void handleStart(List<String> args) throws Exception {
-        Marathon.url = "http://master:8080";
+    private static void handleStart(String... args) throws Exception {
+        Marathon.JmeterServers servers = new Marathon.JmeterServers();
+
+        OptionParser parser = new OptionParser();
+        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
+        parser.accepts("download").withRequiredArg().required().ofType(String.class);
+
+        parser.accepts("app").withOptionalArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
+        parser.accepts("instances").withOptionalArg().ofType(Integer.class).defaultsTo(servers.instances);
+        parser.accepts("cpus").withOptionalArg().ofType(Double.class).defaultsTo(servers.cpus);
+        parser.accepts("mem").withOptionalArg().ofType(Integer.class).defaultsTo(servers.mem);
+
+        OptionSet options = null;
+        try {
+            options = parser.parse(args);
+        } catch (OptionException e) {
+            parser.printHelpOn(out);
+            err.println(e.getMessage());
+            System.exit(1);
+        }
+
+        Marathon.url = (String) options.valueOf("marathon");
+
+        servers.downloadUrl = (String) options.valueOf("download");
+        servers.app = (String) options.valueOf("app");
+        servers.instances = (int) options.valueOf("instances");
+
+        servers.cpus = (double) options.valueOf("cpus");
+        servers.mem = (int) options.valueOf("mem");
 
         HttpServer server = new HttpServer();
-        server.setPort(5000);
+        server.setPort(new URI(servers.downloadUrl).getPort());
         server.setJmeterDistro(jmeterDistro());
         server.start();
-
-        Marathon.JmeterServers servers = new Marathon.JmeterServers();
-        servers.downloadUrl = "http://192.168.3.1:5000";
-        servers.instances = 2;
 
         if (Marathon.hasApp(servers.app)) {
             err.println("App \"" + servers.app + "\" is already running");
@@ -66,7 +91,7 @@ public class Cli {
         server.stop();
     }
 
-    private static void handleStop(List<String> args) throws IOException {
+    private static void handleStop(String... args) throws IOException {
         Marathon.url = "http://master:8080";
         String app = Marathon.JmeterServers.DEFAULT_APP;
 

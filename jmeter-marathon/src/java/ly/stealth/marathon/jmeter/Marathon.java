@@ -104,17 +104,20 @@ public class Marathon {
         public String app = DEFAULT_APP;
         public int instances = 1;
 
+        public double cpus = 1.0;
+        public int mem = 128;
+
         @SuppressWarnings("unchecked")
         private JSONObject appJson() {
             JSONObject obj = new JSONObject();
 
             obj.put("id", app);
-            obj.put("cpus", 1);
-            obj.put("mem", 128);
+            obj.put("cpus", cpus);
+            obj.put("mem", mem);
 
             obj.put("instances", instances);
             obj.put("ports", Arrays.asList(0));
-            obj.put("uris", Arrays.asList(downloadUrl + "/jmeter/apache-jmeter.zip", downloadUrl + "/jmeter/agent.sh"));
+            obj.put("uris", Arrays.asList(downloadUrl + "/jmeter/apache-jmeter.zip"));
 
             String startJmeter = "./jmeter.sh -s -Jserver.rmi.localport=$PORT0 -Jserver.rmi.port=$PORT";
             obj.put("cmd", "cd apache-jmeter*/bin && chmod +x *.sh && " + startJmeter);
