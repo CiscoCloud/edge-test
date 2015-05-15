@@ -15,8 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
 public class HttpServer {
-    private static final Logger logger =Logger.getLogger(HttpServer.class);
-
     private int port = 5000;
     private File jmeterDistro;
 
@@ -46,8 +44,6 @@ public class HttpServer {
         server.setHandler(handler);
         server.addConnector(connector);
         server.start();
-
-        logger.info("started on port " + port);
     }
 
     public synchronized void stop() throws Exception {
@@ -56,8 +52,6 @@ public class HttpServer {
         server.stop();
         server.join();
         server = null;
-
-        logger.info("stopped");
     }
 
     public static class JettyLog4jLogger implements org.eclipse.jetty.util.log.Logger {
@@ -104,8 +98,7 @@ public class HttpServer {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
             String uri = request.getRequestURI();
-            if (uri.startsWith("/jmeter") && uri.endsWith(".zip")) downloadFile(jmeterDistro, response);
-            else if (uri.startsWith("/jmeter") && uri.endsWith(".sh")) downloadFile(Agents.script, response);
+            if (uri.startsWith("/jmeter")) downloadFile(jmeterDistro, response);
             else response.sendError(404);
         }
 
