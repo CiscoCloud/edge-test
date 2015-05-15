@@ -12,7 +12,7 @@ import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.kafka._
 
 object Main extends App {
-  val parser = new scopt.OptionParser[AppConfig]("latencies-calc") {
+  val parser = new scopt.OptionParser[AppConfig]("spark-analysis") {
     head("Latencies calculation job", "1.0")
     opt[String]("topic") unbounded() required() action { (value, config) =>
       config.copy(topic = value)
@@ -36,7 +36,7 @@ object Main extends App {
     case None => sys.exit(1)
   }
 
-  val sparkConfig = new SparkConf().setAppName("latencies-calc").set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+  val sparkConfig = new SparkConf().setAppName("spark-analysis").set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val ssc = new StreamingContext(sparkConfig, Seconds(1))
   ssc.checkpoint("spark-analysis")
 
