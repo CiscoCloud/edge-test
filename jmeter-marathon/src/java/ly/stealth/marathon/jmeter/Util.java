@@ -1,4 +1,4 @@
-package ly.stealth.mesos.marathon;
+package ly.stealth.marathon.jmeter;
 
 import java.io.IOException;
 import java.io.InputStream;

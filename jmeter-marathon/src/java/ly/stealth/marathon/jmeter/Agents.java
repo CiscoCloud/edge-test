@@ -1,4 +1,4 @@
-package ly.stealth.mesos.marathon;
+package ly.stealth.marathon.jmeter;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
