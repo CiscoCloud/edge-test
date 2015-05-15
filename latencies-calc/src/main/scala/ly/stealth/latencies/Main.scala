@@ -1,16 +1,15 @@
 package ly.stealth.latencies
 
+import _root_.kafka.serializer.DefaultDecoder
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.CassandraConnector
-import com.datastax.spark.connector.rdd
 import io.confluent.kafka.serializers.KafkaAvroDecoder
-import _root_.kafka.serializer.DefaultDecoder
 import org.apache.avro.generic.GenericData.Record
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.spark.SparkConf
+import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.kafka._
-import org.apache.spark.streaming._
 
 object Main extends App {
   val parser = new scopt.OptionParser[AppConfig]("latencies-calc") {
@@ -51,13 +50,13 @@ object Main extends App {
     "auto.offset.reset" -> "smallest",
     "schema.registry.url" -> appConfig.schemaRegistryUrl)
 
-  start(consumerConfig, appConfig.topic)
+  start(ssc, consumerConfig, appConfig.topic)
 
   ssc.start()
   ssc.awaitTermination()
 
-  def start(consumerConfig: Map[String, String], topic: String) = {
-    val stream = KafkaUtils.createDirectStream[Array[Byte], Any, DefaultDecoder, KafkaAvroDecoder](ssc, consumerConfig, Set(topic))
+  def start(ssc: StreamingContext, consumerConfig: Map[String, String], topic: String) = {
+    val stream = KafkaUtils.createDirectStream[Array[Byte], AnyRef, DefaultDecoder, KafkaAvroDecoder](ssc, consumerConfig, Set(topic))
     stream.persist()
     calculateAverages(stream, "second", 10)
     calculateAverages(stream, "second", 30)
@@ -67,7 +66,7 @@ object Main extends App {
     calculateAverages(stream, "minute", 15)
   }
 
-  def calculateAverages(stream: InputDStream[(Array[Byte], Any)], durationUnit: String, durationValue: Long) = {
+  def calculateAverages(stream: InputDStream[(Array[Byte], AnyRef)], durationUnit: String, durationValue: Long) = {
     stream.window(windowDuration(durationUnit, durationValue)).map(value => {
       val record = value.asInstanceOf[GenericRecord]
       import scala.collection.JavaConversions._
