@@ -35,9 +35,21 @@ public class Cli {
     }
 
     private static void handleStatus(String... args) throws IOException {
-        String app = Marathon.JmeterServers.DEFAULT_APP;
+        OptionParser parser = new OptionParser();
+        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
+        parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
 
-        Marathon.url = "http://master:8080";
+        OptionSet options = null;
+        try {
+            options = parser.parse(args);
+        } catch (OptionException e) {
+            parser.printHelpOn(out);
+            err.println(e.getMessage());
+            System.exit(1);
+        }
+
+        Marathon.url = (String) options.valueOf("marathon");
+        String app = (String) options.valueOf("app");
         List<String> endpoints = Marathon.getEndpoints(app);
 
         if (endpoints.isEmpty()) out.println("App \"" + app + "\" is not started");
@@ -51,7 +63,7 @@ public class Cli {
         parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
         parser.accepts("download").withRequiredArg().required().ofType(String.class);
 
-        parser.accepts("app").withOptionalArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
+        parser.accepts("app").withOptionalArg().ofType(String.class).defaultsTo(servers.app);
         parser.accepts("instances").withOptionalArg().ofType(Integer.class).defaultsTo(servers.instances);
         parser.accepts("cpus").withOptionalArg().ofType(Double.class).defaultsTo(servers.cpus);
         parser.accepts("mem").withOptionalArg().ofType(Integer.class).defaultsTo(servers.mem);
@@ -92,8 +104,21 @@ public class Cli {
     }
 
     private static void handleStop(String... args) throws IOException {
-        Marathon.url = "http://master:8080";
-        String app = Marathon.JmeterServers.DEFAULT_APP;
+        OptionParser parser = new OptionParser();
+        parser.accepts("marathon").withRequiredArg().required().ofType(String.class);
+        parser.accepts("app").withRequiredArg().ofType(String.class).defaultsTo(Marathon.JmeterServers.DEFAULT_APP);
+
+        OptionSet options = null;
+        try {
+            options = parser.parse(args);
+        } catch (OptionException e) {
+            parser.printHelpOn(out);
+            err.println(e.getMessage());
+            System.exit(1);
+        }
+
+        Marathon.url = (String) options.valueOf("marathon");
+        String app = (String) options.valueOf("app");
 
         if (!Marathon.hasApp(app)) {
             err.println("App \"" + app + "\" is not started");
