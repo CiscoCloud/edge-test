@@ -5,7 +5,7 @@ import java.util
 import ly.stealth.mesos.logging.Util.Str
 import org.apache.log4j._
 import org.apache.mesos.Protos._
-import org.apache.mesos.{MesosSchedulerDriver, SchedulerDriver}
+import org.apache.mesos.{Protos, MesosSchedulerDriver, SchedulerDriver}
 
 import scala.collection.JavaConversions._
 
@@ -142,10 +142,57 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   override def resourceOffers(driver: SchedulerDriver, offers: util.List[Offer]) {
     logger.info("[resourceOffers]\n" + Str.offers(offers))
+
+    offers.foreach { offer =>
+      val cpus = getScalarResources(offer, "cpus")
+      val mems = getScalarResources(offer, "mem")
+      val portOpt = getRangeResources(offer, "ports").headOption.map(_.getBegin)
+
+      if (runningInstances < config.instances && cpus > config.cpuPerTask && mems > config.memPerTask && portOpt.nonEmpty) {
+        val taskId = TaskID.newBuilder().setValue("transform-" + runningInstances).build()
+        val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
+          .setExecutor(this.createExecutor(runningInstances, portOpt.get))
+          .addResources(Protos.Resource.newBuilder().setName("cpus").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.cpuPerTask)))
+        .addResources(Protos.Resource.newBuilder().setName("mem").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.memPerTask)))
+        .addResources(Protos.Resource.newBuilder().setName("ports").setType(Protos.Value.Type.RANGES).setRanges(
+        Protos.Value.Ranges.newBuilder().addRange(Protos.Value.Range.newBuilder().setBegin(portOpt.get).setEnd(portOpt.get))
+        )).build
+
+        runningInstances += 1
+
+        driver.launchTasks(util.Arrays.asList(offer.getId), util.Arrays.asList(taskInfo), Filters.newBuilder().setRefuseSeconds(1).build)
+      }
+    }
   }
 
   override def executorLost(driver: SchedulerDriver, executorId: ExecutorID, slaveId: SlaveID, status: Int) {
     logger.info("[executorLost] executor:" + Str.id(executorId.getValue) + " slave:" + Str.id(slaveId.getValue) + " status:" + status)
+  }
+
+  private def getScalarResources(offer: Offer, name: String): Double = {
+    offer.getResourcesList.foldLeft(0.0) { (all, current) =>
+      if (current.getName == name) all + current.getScalar.getValue
+      else all
+    }
+  }
+
+  private def getRangeResources(offer: Offer, name: String): List[Protos.Value.Range] = {
+    offer.getResourcesList.foldLeft[List[Protos.Value.Range]](List()) { case (all, current) =>
+      if (current.getName == name) all ++ current.getRanges.getRangeList
+      else all
+    }
+  }
+
+  private def createExecutor(id: Int, port: Long): ExecutorInfo = {
+    val path = this.config.executor.split("/").last
+    val cmd = "java -cp " + this.config.executor + " ly.stealth.mesos.logging.Executor"
+    ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue("transform-" + id))
+    .setCommand(CommandInfo.newBuilder()
+      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/$path"))
+      .setValue(cmd))
+    .setName("LogLine Transform Executor")
+    .setSource("cisco")
+    .build
   }
 }
 
