@@ -72,6 +72,11 @@ object Scheduler extends org.apache.mesos.Scheduler {
         (value, config) =>
           config.copy(topic = value)
       }
+
+      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action {
+        (value, config) =>
+          config.copy(dropwizardConfig = value)
+      }
     }
 
     parser.parse(args, SchedulerConfig()) match {
@@ -82,6 +87,8 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   def main(args: Array[String]) {
     parseConfig(args)
+
+    ArtifactServer.run("server", config.dropwizardConfig)
 
     val frameworkBuilder = FrameworkInfo.newBuilder()
     frameworkBuilder.setUser(config.user)
@@ -199,4 +206,5 @@ object Scheduler extends org.apache.mesos.Scheduler {
 private case class SchedulerConfig(master: String = "", user: String = "root", instances: Int = 1,
                                    artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", cpuPerTask: Double = 0.2, memPerTask: Double = 256,
-                                   schemaRegistryUrl: String = "", brokerList: String = "", topic: String = "")
+                                   schemaRegistryUrl: String = "", brokerList: String = "", topic: String = "",
+                                   dropwizardConfig: String = "config.yml")

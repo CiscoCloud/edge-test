@@ -1,0 +1,9 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 6666
+
+logging:
+  level: INFO
+  loggers:
+    ly.stealth.mesos.logging: DEBUG
