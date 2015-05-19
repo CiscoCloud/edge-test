@@ -1,0 +1,106 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Exhibitor auto-scaling group",
+  "Parameters" : {
+    "KeyName": {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    },
+    "InstanceType" : {
+      "Description" : "WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.small",
+      "AllowedValues" : [ "t2.micro", "t2.small", "t2.medium", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+    "InstanceCount" : {
+      "Description": "Number of instances to create",
+      "Type": "Number",
+      "Default": "3"
+    },
+    "InstanceSize" : {
+      "Description": "GB of elastic-backed storage to allocate to each instance",
+      "Type": "Number",
+      "Default": "10"
+    },
+    "BaseImageId" : {
+      "Description" : "An Amazon AMI Image ID to use for each EC2 instance",
+      "Type" : "String",
+      "Default" : "ami-73658537"
+    },
+    "ASGName" : {
+      "Description" : "A unique name for the autoscaling group",
+      "Type" : "String",
+      "Default" : "Exhibitor"
+    }
+  },
+
+  "Mappings" : {
+    "KafkaExhibitorMap": {
+      "us-west-1": { "ImageId": "ami-73658537" }
+    }
+  },
+
+  "Resources" : {
+    "BasicSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "default",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "1024",
+            "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [{ "Key": "Name", "Value": { "Ref" : "ASGName" } }]
+      }
+    },
+    "LC" : {
+       "Type" : "AWS::AutoScaling::LaunchConfiguration",
+       "Properties" : {
+          "BlockDeviceMappings": [{
+            "DeviceName": "/dev/sda1",
+            "Ebs" : {"VolumeSize": { "Ref": "InstanceSize" }}
+          }],
+          "ImageId" : { "Ref" : "BaseImageId" },
+          "InstanceType" : { "Ref" : "InstanceType" },
+          "KeyName" : { "Ref" : "KeyName" },
+          "SecurityGroups": [{ "Ref": "BasicSG" }],
+          "UserData": {
+            "Fn::Base64": {
+              "Fn::Join": [
+                "",
+                [
+                  "#!/bin/bash -ex\nexec > >(tee /var/log/user-data.log) 2>&1",
+                  "\n",
+                  "echo carry on\n",
+                  "echo nothing to see here"
+                ]
+              ]
+            }
+          }
+       }
+    },
+    "ASG" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "DependsOn": "LC",
+      "Properties" : {
+        "AvailabilityZones" : { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
+        "LaunchConfigurationName" : { "Ref" : "LC" },
+        "MinSize" : { "Ref" : "InstanceCount" },
+        "MaxSize" : { "Ref" : "InstanceCount" },
+        "DesiredCapacity" : { "Ref" : "InstanceCount" }
+      }
+    }
+  },
+  "Outputs" : { }
+}

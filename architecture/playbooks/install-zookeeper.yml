@@ -1,0 +1,28 @@
+---
+- name: Install Zookeeper
+  hosts: tag_exhibitor_True
+  sudo: True
+  vars:
+    install_dir: /opt/exhibitor
+  tasks:
+    - name: install zookeeper
+      apt: name=zookeeper={{ zk_version }} state=present update_cache=yes
+    - name: install git
+      apt: name=git state=present
+    - name: checkout exhibitor
+      git: repo=https://github.com/Netflix/exhibitor.git dest={{ install_dir }} version={{ exhibitor_version }}
+    - name: build exhibitor
+      command: ./gradlew build chdir={{ install_dir }}
+    #- name: 
+#      notify:
+#        - stop cassandra
+#        - delete data directory
+#+    - name: install pip
+#+      apt: name=python-pip state=present update_cache=yes
+#+    - name: install cassandra-driver
+##+      pip: name=cassandra-driver
+#+  handlers:
+#+    - name: stop cassandra
+#+      service: name=cassandra state=stopped
+#+    - name: delete data directory
+#+      file: path=/var/lib/cassandra/data state=absent

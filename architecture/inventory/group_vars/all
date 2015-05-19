@@ -1,0 +1,13 @@
+key_name: nostril
+instance_type: t1.micro
+image: ami-fb7f90bf
+exact_count: 3
+name_tag: exhibitor
+region: us-west-1
+volume_size: 10
+# this subnet is only in us-west-1a availability zone
+vpc_subnet_id: subnet-a9d510cc
+zone: us-west-1a
+
+zk_version: 3.4.5+dfsg-1
+exhibitor_version: v1.5.5
