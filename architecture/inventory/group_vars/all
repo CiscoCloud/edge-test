@@ -1,8 +1,9 @@
 key_name: nostril
-instance_type: t1.micro
-image: ami-fb7f90bf
-exact_count: 3
-name_tag: exhibitor-01
+instance_type: t2.small
+# optimized base image
+image: ami-d5608991
+exact_count: 5
+name_tag: exhibitor-5node
 region: us-west-1
 volume_size: 10
 # this subnet is only in us-west-1a availability zone
