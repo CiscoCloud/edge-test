@@ -9,6 +9,7 @@ import org.apache.mesos.Protos._
 import org.apache.mesos.{MesosSchedulerDriver, Protos, SchedulerDriver}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 object Scheduler extends org.apache.mesos.Scheduler {
   private val logger = Logger.getLogger(this.getClass)
@@ -16,6 +17,8 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   private var runningInstances = 0
   private var config: SchedulerConfig = null
+
+  private val tasks: mutable.Set[TaskID] = mutable.Set()
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[SchedulerConfig]("scheduler") {
@@ -29,7 +32,7 @@ object Scheduler extends org.apache.mesos.Scheduler {
           config.copy(user = value)
       }
 
-      opt[Int]('i', "instances").required().text("Number of tasks to run.").action {
+      opt[Int]('i', "instances").optional().text("Number of tasks to run.").action {
         (value, config) =>
           config.copy(instances = value)
       }
@@ -94,7 +97,7 @@ object Scheduler extends org.apache.mesos.Scheduler {
   def main(args: Array[String]) {
     parseConfig(args)
 
-    ArtifactServer.run("server", config.dropwizardConfig)
+    new HttpServer(config).run("server", config.dropwizardConfig)
 
     val frameworkBuilder = FrameworkInfo.newBuilder()
     frameworkBuilder.setUser(config.user)
@@ -144,7 +147,10 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
     status.getState match {
       case TaskState.TASK_LOST | TaskState.TASK_FINISHED | TaskState.TASK_FAILED |
-           TaskState.TASK_KILLED | TaskState.TASK_ERROR => synchronized(this.runningInstances -= 1)
+           TaskState.TASK_KILLED | TaskState.TASK_ERROR => synchronized {
+        tasks -= status.getTaskId
+        this.runningInstances -= 1
+      }
       case _ =>
     }
   }
@@ -155,6 +161,15 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   override def resourceOffers(driver: SchedulerDriver, offers: util.List[Offer]) {
     logger.info("[resourceOffers]\n" + Str.offers(offers))
+
+    synchronized {
+      if (runningInstances > config.instances) {
+        val toKill = runningInstances - config.instances
+        ((0 until toKill) zip tasks).foreach { case (index, taskId) =>
+          driver.killTask(taskId)
+        }
+      }
+    }
 
     offers.foreach { offer =>
       val cpus = getScalarResources(offer, "cpus")
@@ -179,6 +194,7 @@ object Scheduler extends org.apache.mesos.Scheduler {
             Protos.Value.Ranges.newBuilder().addRange(Protos.Value.Range.newBuilder().setBegin(portOpt.get).setEnd(adminPortOpt.get))
           )).build
 
+          tasks += taskId
           runningInstances += 1
 
           driver.launchTasks(util.Arrays.asList(offer.getId), util.Arrays.asList(taskInfo), Filters.newBuilder().setRefuseSeconds(1).build)
@@ -212,8 +228,8 @@ object Scheduler extends org.apache.mesos.Scheduler {
       s"${this.config.schemaRegistryUrl} --broker.list ${this.config.brokerList} --topic ${this.config.topic}"
     ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue(id))
       .setCommand(CommandInfo.newBuilder()
-      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/$path"))
-      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/$executorConfigPath"))
+      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/resource/$path"))
+      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/resource/$executorConfigPath"))
       .setValue(cmd))
       .setName("LogLine Transform Executor")
       .setSource("cisco")
@@ -221,7 +237,7 @@ object Scheduler extends org.apache.mesos.Scheduler {
   }
 }
 
-private case class SchedulerConfig(master: String = "", user: String = "root", instances: Int = 1,
+private case class SchedulerConfig(master: String = "", user: String = "root", var instances: Int = 1,
                                    artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", cpuPerTask: Double = 0.2, memPerTask: Double = 256,
                                    schemaRegistryUrl: String = "", brokerList: String = "", topic: String = "",

@@ -8,6 +8,7 @@ import org.apache.mesos.{ExecutorDriver, MesosExecutorDriver, Protos}
 object Executor extends org.apache.mesos.Executor {
   private var shutdownFlag = false
   private var config: ExecutorConfig = null
+  private val lock = new Object()
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[ExecutorConfig]("executor") {
@@ -56,9 +57,9 @@ object Executor extends org.apache.mesos.Executor {
   override def shutdown(driver: ExecutorDriver) {
     logger.info("[shutdown]")
 
-    synchronized {
+    lock.synchronized {
       shutdownFlag = true
-      notifyAll()
+      lock.notifyAll()
     }
   }
 
@@ -69,9 +70,9 @@ object Executor extends org.apache.mesos.Executor {
   override def killTask(driver: ExecutorDriver, id: TaskID) {
     logger.info("[killTask] " + id.getValue)
 
-    synchronized {
+    lock.synchronized {
       shutdownFlag = true
-      notifyAll()
+      lock.notifyAll()
     }
   }
 
@@ -99,11 +100,10 @@ object Executor extends org.apache.mesos.Executor {
         var failed = false
         try {
           logger.info("[Started task] " + Str.task(task))
-          startHTTPServer()
-          startProducer()
+          new ExecutorEndpoint(config).run("server", config.dropwizardConfig)
 
           while (!shutdownFlag) {
-            synchronized(wait())
+            lock.synchronized(lock.wait())
           }
         } catch {
           case t: Throwable =>
@@ -113,17 +113,10 @@ object Executor extends org.apache.mesos.Executor {
           val finishedStatus = TaskStatus.newBuilder().setTaskId(task.getTaskId)
             .setState(if (failed) Protos.TaskState.TASK_FAILED else Protos.TaskState.TASK_FINISHED).build
           driver.sendStatusUpdate(finishedStatus)
+          driver.stop()
         }
       }
     }.start()
-  }
-
-  private def startHTTPServer() {
-    new ExecutorEndpoint(config).run("server", config.dropwizardConfig)
-  }
-
-  private def startProducer() {
-
   }
 }
 
