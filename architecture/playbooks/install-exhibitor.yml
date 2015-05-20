@@ -1,0 +1,29 @@
+---
+- name: Install Exhibitor
+  hosts: tag_exhibitor_True
+  sudo: True
+  tasks:
+    - name: install git
+      apt: name=git state=present
+    - name: install maven
+      apt: name=maven state=present
+    - name: install zookeeper
+      apt: name=zookeeper={{ zk_version }} state=present update_cache=yes
+    - name: install zookeeper upstart scripts
+      apt: name=zookeeperd state=present update_cache=yes
+      notify: restart zookeeper service
+    - name: create exhibitor directory
+      file: path={{ exhibitor_install_dir }} state=directory owner=root group=root mode=0644
+    - name: download exhibitor maven pom file
+      get_url: url={{ exhibitor_maven_url }} dest={{ exhibitor_install_dir }}
+      notify:  build exhibitor
+    - name: create exhibitor upstart script
+      template: src=templates/upstart/exhibitor.conf dest=/etc/init/exhibitor.conf owner=root group=root
+      notify: restart exhibitor service
+  handlers:
+    - name: build exhibitor
+      command: mvn clean package chdir={{ exhibitor_install_dir }} creates={{ exhibitor_install_dir }}/target/exhibitor-{{ exhibitor_version }}.jar
+    - name: restart zookeeper service
+      service: name=zookeeper state=restarted
+    - name: restart exhibitor service
+      service: name=exhibitor state=restarted
