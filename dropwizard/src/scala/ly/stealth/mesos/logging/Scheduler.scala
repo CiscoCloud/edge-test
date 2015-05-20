@@ -1,11 +1,12 @@
 package ly.stealth.mesos.logging
 
 import java.util
+import java.util.UUID
 
 import ly.stealth.mesos.logging.Util.Str
 import org.apache.log4j._
 import org.apache.mesos.Protos._
-import org.apache.mesos.{Protos, MesosSchedulerDriver, SchedulerDriver}
+import org.apache.mesos.{MesosSchedulerDriver, Protos, SchedulerDriver}
 
 import scala.collection.JavaConversions._
 
@@ -77,6 +78,11 @@ object Scheduler extends org.apache.mesos.Scheduler {
         (value, config) =>
           config.copy(dropwizardConfig = value)
       }
+
+      opt[String]('f', "executor.dropwizard.config").optional().text("Executor dropwizard config yml file.").action {
+        (value, config) =>
+          config.copy(executorDropwizardConfig = value)
+      }
     }
 
     parser.parse(args, SchedulerConfig()) match {
@@ -138,7 +144,7 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
     status.getState match {
       case TaskState.TASK_LOST | TaskState.TASK_FINISHED | TaskState.TASK_FAILED |
-        TaskState.TASK_KILLED | TaskState.TASK_ERROR => this.runningInstances -= 1
+           TaskState.TASK_KILLED | TaskState.TASK_ERROR => synchronized(this.runningInstances -= 1)
       case _ =>
     }
   }
@@ -153,21 +159,30 @@ object Scheduler extends org.apache.mesos.Scheduler {
     offers.foreach { offer =>
       val cpus = getScalarResources(offer, "cpus")
       val mems = getScalarResources(offer, "mem")
-      val portOpt = getRangeResources(offer, "ports").headOption.map(_.getBegin)
+      val ports = getRangeResources(offer, "ports")
+      val portOpt = ports.headOption.map(_.getBegin)
+      val adminPortOpt = ports.headOption.flatMap { range =>
+        val port = range.getBegin + 1
+        if (range.getEnd >= port) Some(port)
+        else None
+      }
 
-      if (runningInstances < config.instances && cpus > config.cpuPerTask && mems > config.memPerTask && portOpt.nonEmpty) {
-        val taskId = TaskID.newBuilder().setValue("transform-" + runningInstances).build()
-        val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
-          .setExecutor(this.createExecutor(runningInstances, portOpt.get))
-          .addResources(Protos.Resource.newBuilder().setName("cpus").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.cpuPerTask)))
-        .addResources(Protos.Resource.newBuilder().setName("mem").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.memPerTask)))
-        .addResources(Protos.Resource.newBuilder().setName("ports").setType(Protos.Value.Type.RANGES).setRanges(
-        Protos.Value.Ranges.newBuilder().addRange(Protos.Value.Range.newBuilder().setBegin(portOpt.get).setEnd(portOpt.get))
-        )).build
+      synchronized {
+        if (runningInstances < config.instances && cpus > config.cpuPerTask && mems > config.memPerTask && portOpt.nonEmpty && adminPortOpt.nonEmpty) {
+          val id = "transform-" + UUID.randomUUID().toString
+          val taskId = TaskID.newBuilder().setValue(id).build()
+          val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
+            .setExecutor(this.createExecutor(id, portOpt.get, adminPortOpt.get))
+            .addResources(Protos.Resource.newBuilder().setName("cpus").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.cpuPerTask)))
+            .addResources(Protos.Resource.newBuilder().setName("mem").setType(Protos.Value.Type.SCALAR).setScalar(Protos.Value.Scalar.newBuilder().setValue(config.memPerTask)))
+            .addResources(Protos.Resource.newBuilder().setName("ports").setType(Protos.Value.Type.RANGES).setRanges(
+            Protos.Value.Ranges.newBuilder().addRange(Protos.Value.Range.newBuilder().setBegin(portOpt.get).setEnd(adminPortOpt.get))
+          )).build
 
-        runningInstances += 1
+          runningInstances += 1
 
-        driver.launchTasks(util.Arrays.asList(offer.getId), util.Arrays.asList(taskInfo), Filters.newBuilder().setRefuseSeconds(1).build)
+          driver.launchTasks(util.Arrays.asList(offer.getId), util.Arrays.asList(taskInfo), Filters.newBuilder().setRefuseSeconds(1).build)
+        } else driver.declineOffer(offer.getId)
       }
     }
   }
@@ -190,16 +205,19 @@ object Scheduler extends org.apache.mesos.Scheduler {
     }
   }
 
-  private def createExecutor(id: Int, port: Long): ExecutorInfo = {
+  private def createExecutor(id: String, port: Long, adminPort: Long): ExecutorInfo = {
     val path = this.config.executor.split("/").last
-    val cmd = "java -cp " + this.config.executor + " ly.stealth.mesos.logging.Executor"
-    ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue("transform-" + id))
-    .setCommand(CommandInfo.newBuilder()
+    val executorConfigPath = this.config.executorDropwizardConfig.split("/").last
+    val cmd = s"java -Ddw.server.applicationConnectors[0].port=$port -Ddw.server.adminConnectors[0].port=$adminPort -cp ${this.config.executor} ly.stealth.mesos.logging.Executor --schema.registry " +
+      s"${this.config.schemaRegistryUrl} --broker.list ${this.config.brokerList} --topic ${this.config.topic}"
+    ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue(id))
+      .setCommand(CommandInfo.newBuilder()
       .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/$path"))
+      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/$executorConfigPath"))
       .setValue(cmd))
-    .setName("LogLine Transform Executor")
-    .setSource("cisco")
-    .build
+      .setName("LogLine Transform Executor")
+      .setSource("cisco")
+      .build
   }
 }
 
@@ -207,4 +225,4 @@ private case class SchedulerConfig(master: String = "", user: String = "root", i
                                    artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", cpuPerTask: Double = 0.2, memPerTask: Double = 256,
                                    schemaRegistryUrl: String = "", brokerList: String = "", topic: String = "",
-                                   dropwizardConfig: String = "config.yml")
+                                   dropwizardConfig: String = "config.yml", executorDropwizardConfig: String = "executor.yml")

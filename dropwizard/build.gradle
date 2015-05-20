@@ -6,6 +6,9 @@ jar.archiveName = "logging-mesos-${version}.jar"
 
 repositories {
     mavenCentral()
+    maven {
+        url = "http://packages.confluent.io/maven/"
+    }
 }
 
 buildDir = 'out/gradle'
@@ -23,10 +26,17 @@ sourceSets {
 dependencies {
     compile "org.scala-lang:scala-library:2.10.3"
     compile "org.apache.mesos:mesos:0.21.1"
+    compile ("org.apache.kafka:kafka_2.10:0.8.2.1") {
+        exclude group: "org.slf4j"
+    }
     compile "com.google.protobuf:protobuf-java:2.5.0"
     compile "log4j:log4j:1.2.16"
     compile 'com.github.scopt:scopt_2.10:3.3.0'
     compile 'io.dropwizard:dropwizard-core:0.8.1'
+    compile "org.apache.avro:avro:1.7.7"
+    compile ("io.confluent:kafka-avro-serializer:1.0") {
+        exclude group: "org.slf4j"
+    }
     testCompile 'junit:junit:4.12'
 }
 
