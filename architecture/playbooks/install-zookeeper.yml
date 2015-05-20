@@ -9,10 +9,14 @@
       apt: name=zookeeper={{ zk_version }} state=present update_cache=yes
     - name: install git
       apt: name=git state=present
-    - name: checkout exhibitor
-      git: repo=https://github.com/Netflix/exhibitor.git dest={{ install_dir }} version={{ exhibitor_version }}
+    - name: install maven
+      apt: name=maven state=present
+    - name: create exhibitor directory
+      file: path=/opt/exhibitor state=directory owner=root group=root mode=0644
+    - name: download maven pom file
+      get_url: url=https://raw.githubusercontent.com/Netflix/exhibitor/master/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml dest={{ install_dir }}
     - name: build exhibitor
-      command: ./gradlew build chdir={{ install_dir }}
+      command: mvn clean package chdir={{ install_dir }} creates={{ install_dir }}/target/exhibitor-{{ exhibitor_version }}.jar
     #- name: 
 #      notify:
 #        - stop cassandra
