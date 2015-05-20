@@ -13,7 +13,6 @@ import scala.collection.mutable
 
 object Scheduler extends org.apache.mesos.Scheduler {
   private val logger = Logger.getLogger(this.getClass)
-  private var driver: SchedulerDriver = null
 
   private var runningInstances = 0
   private var config: SchedulerConfig = null
@@ -117,7 +116,6 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   override def registered(driver: SchedulerDriver, id: FrameworkID, master: MasterInfo) {
     logger.info("[registered] framework:" + Str.id(id.getValue) + " master:" + Str.master(master))
-    this.driver = driver
   }
 
   override def offerRescinded(driver: SchedulerDriver, id: OfferID) {
@@ -126,12 +124,10 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   override def disconnected(driver: SchedulerDriver) {
     logger.info("[disconnected]")
-    this.driver = null
   }
 
   override def reregistered(driver: SchedulerDriver, master: MasterInfo) {
     logger.info("[reregistered] master:" + Str.master(master))
-    this.driver = driver
   }
 
   override def slaveLost(driver: SchedulerDriver, id: SlaveID) {
