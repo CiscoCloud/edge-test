@@ -8,4 +8,5 @@
 - include: playbooks/verify-env.yml
 - include: playbooks/provision-hosts.yml
 - include: playbooks/install-jdk.yml
+- include: playbooks/install-zookeeper.yml
 - include: playbooks/install-exhibitor.yml

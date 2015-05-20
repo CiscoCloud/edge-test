@@ -9,10 +9,17 @@ volume_size: 10
 vpc_subnet_id: subnet-a9d510cc
 zone: us-west-1a
 
-zk_version: 3.4.5+dfsg-1
+upstart_dir: /etc/init
+
+zookeeper_version: 3.4.6
+zookeeper_sha256sum: 01b3938547cd620dc4c93efe07c0360411f4a66962a70500b163b59014046994
+zookeeper_mirror: https://dist.apache.org/repos/dist/release/zookeeper
 
 exhibitor_version: 1.5.5
 exhibitor_install_dir: /opt/exhibitor
 exhibitor_maven_url: https://raw.githubusercontent.com/Netflix/exhibitor/master/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml
+exhibitor_config_dir: /etc/exhibitor/conf
+exhibitor_defaultconfig: /etc/exhibitor/conf/default
+exhibitor_s3credentials: /etc/exhibitor/conf/credentials
 # TODO: create s3 bucket dynamically
 exhibitor_s3config: exhibitor-bootstrap:{{ name_tag }}
