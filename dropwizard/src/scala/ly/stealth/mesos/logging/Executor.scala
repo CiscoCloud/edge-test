@@ -12,24 +12,16 @@ object Executor extends org.apache.mesos.Executor {
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[ExecutorConfig]("executor") {
-      opt[String]('s', "schema.registry").required().text("Avro Schema Registry url.").action {
-        (value, config) =>
-          config.copy(schemaRegistry = value)
+      opt[String]('p', "producer.config").required().text("Producer config file name.").action { (value, config) =>
+        config.copy(producerConfig = value)
       }
 
-      opt[String]('b', "broker.list").required().text("Comma separated list of brokers for producer.").action {
-        (value, config) =>
-          config.copy(brokerList = value)
+      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
+        config.copy(topic = value)
       }
 
-      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action {
-        (value, config) =>
-          config.copy(topic = value)
-      }
-
-      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action {
-        (value, config) =>
-          config.copy(dropwizardConfig = value)
+      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action { (value, config) =>
+        config.copy(dropwizardConfig = value)
       }
     }
 
@@ -120,7 +112,6 @@ object Executor extends org.apache.mesos.Executor {
   }
 }
 
-case class ExecutorConfig(schemaRegistry: String = "", brokerList: String = "", topic: String = "",
-                          dropwizardConfig: String = "executor.yml")
+case class ExecutorConfig(producerConfig: String = "", topic: String = "", dropwizardConfig: String = "executor.yml")
 
 

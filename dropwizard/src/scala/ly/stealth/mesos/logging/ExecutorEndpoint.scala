@@ -1,5 +1,6 @@
 package ly.stealth.mesos.logging
 
+import java.io.FileInputStream
 import java.util.Properties
 import javax.ws.rs.{HeaderParam, POST, Path}
 
@@ -35,11 +36,10 @@ class Handler(config: ExecutorConfig) {
   mapper.registerModule(module)
 
   private val props = new Properties()
-  props.put(BOOTSTRAP_SERVERS_CONFIG, config.brokerList)
+  props.load(new FileInputStream(config.producerConfig))
   props.put(KEY_SERIALIZER_CLASS_CONFIG, classOf[KafkaAvroSerializer])
   props.put(VALUE_SERIALIZER_CLASS_CONFIG, classOf[KafkaAvroSerializer])
-  props.put("schema.registry.url", config.schemaRegistry)
-  logger.info(props.toString)
+  logger.info("Producer properties: " + props)
 
   private val producer = new KafkaProducer[Any, IndexedRecord](props)
 

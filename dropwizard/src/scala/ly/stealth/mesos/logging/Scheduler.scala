@@ -21,69 +21,52 @@ object Scheduler extends org.apache.mesos.Scheduler {
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[SchedulerConfig]("scheduler") {
-      opt[String]('m', "master").required().text("Mesos Master addresses.").action {
-        (value, config) =>
-          config.copy(master = value)
+      opt[String]('m', "master").required().text("Mesos Master addresses.").action { (value, config) =>
+        config.copy(master = value)
       }
 
-      opt[String]('u', "user").required().text("Mesos user.").action {
-        (value, config) =>
-          config.copy(user = value)
+      opt[String]('u', "user").required().text("Mesos user.").action { (value, config) =>
+        config.copy(user = value)
       }
 
-      opt[Int]('i', "instances").optional().text("Number of tasks to run.").action {
-        (value, config) =>
-          config.copy(instances = value)
+      opt[Int]('i', "instances").optional().text("Number of tasks to run.").action { (value, config) =>
+        config.copy(instances = value)
       }
 
-      opt[String]('h', "artifact.host").optional().text("Binding host for artifact server.").action {
-        (value, config) =>
-          config.copy(artifactServerHost = value)
+      opt[String]('h', "artifact.host").optional().text("Binding host for artifact server.").action { (value, config) =>
+        config.copy(artifactServerHost = value)
       }
 
-      opt[Int]('p', "artifact.port").optional().text("Binding port for artifact server.").action {
-        (value, config) =>
-          config.copy(artifactServerPort = value)
+      opt[Int]('p', "artifact.port").optional().text("Binding port for artifact server.").action { (value, config) =>
+        config.copy(artifactServerPort = value)
       }
 
-      opt[String]('e', "executor").required().text("Executor file name.").action {
-        (value, config) =>
-          config.copy(executor = value)
+      opt[String]('e', "executor").required().text("Executor file name.").action { (value, config) =>
+        config.copy(executor = value)
       }
 
-      opt[Double]('c', "cpu.per.task").optional().text("CPUs per task.").action {
-        (value, config) =>
-          config.copy(cpuPerTask = value)
+      opt[Double]('c', "cpu.per.task").optional().text("CPUs per task.").action { (value, config) =>
+        config.copy(cpuPerTask = value)
       }
 
-      opt[Double]('r', "mem.per.task").optional().text("Memory per task.").action {
-        (value, config) =>
-          config.copy(memPerTask = value)
+      opt[Double]('r', "mem.per.task").optional().text("Memory per task.").action { (value, config) =>
+        config.copy(memPerTask = value)
       }
 
-      opt[String]('s', "schema.registry").required().text("Avro Schema Registry url.").action {
-        (value, config) =>
-          config.copy(schemaRegistryUrl = value)
+      opt[String]('s', "producer.config").required().text("Producer config file name.").action { (value, config) =>
+        config.copy(producerConfig = value)
       }
 
-      opt[String]('b', "broker.list").required().text("Comma separated list of brokers for producer.").action {
-        (value, config) =>
-          config.copy(brokerList = value)
+      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
+        config.copy(topic = value)
       }
 
-      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action {
-        (value, config) =>
-          config.copy(topic = value)
+      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action { (value, config) =>
+        config.copy(dropwizardConfig = value)
       }
 
-      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action {
-        (value, config) =>
-          config.copy(dropwizardConfig = value)
-      }
-
-      opt[String]('f', "executor.dropwizard.config").optional().text("Executor dropwizard config yml file.").action {
-        (value, config) =>
-          config.copy(executorDropwizardConfig = value)
+      opt[String]('f', "executor.dropwizard.config").optional().text("Executor dropwizard config yml file.").action { (value, config) =>
+        config.copy(executorDropwizardConfig = value)
       }
     }
 
@@ -220,12 +203,14 @@ object Scheduler extends org.apache.mesos.Scheduler {
   private def createExecutor(id: String, port: Long, adminPort: Long): ExecutorInfo = {
     val path = this.config.executor.split("/").last
     val executorConfigPath = this.config.executorDropwizardConfig.split("/").last
-    val cmd = s"java -Ddw.server.applicationConnectors[0].port=$port -Ddw.server.adminConnectors[0].port=$adminPort -cp ${this.config.executor} ly.stealth.mesos.logging.Executor --schema.registry " +
-      s"${this.config.schemaRegistryUrl} --broker.list ${this.config.brokerList} --topic ${this.config.topic}"
+    val producerConfigPath = this.config.producerConfig.split("/").last
+    val cmd = s"java -Ddw.server.applicationConnectors[0].port=$port -Ddw.server.adminConnectors[0].port=$adminPort -cp ${this.config.executor} ly.stealth.mesos.logging.Executor " +
+      s"--producer.config ${this.config.producerConfig} --topic ${this.config.topic}"
     ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue(id))
       .setCommand(CommandInfo.newBuilder()
       .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/resource/$path"))
       .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/resource/$executorConfigPath"))
+      .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.config.artifactServerHost}:${this.config.artifactServerPort}/resource/$producerConfigPath"))
       .setValue(cmd))
       .setName("LogLine Transform Executor")
       .setSource("cisco")
@@ -236,5 +221,5 @@ object Scheduler extends org.apache.mesos.Scheduler {
 private case class SchedulerConfig(master: String = "", user: String = "root", var instances: Int = 1,
                                    artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", cpuPerTask: Double = 0.2, memPerTask: Double = 256,
-                                   schemaRegistryUrl: String = "", brokerList: String = "", topic: String = "",
+                                   producerConfig: String = "", topic: String = "",
                                    dropwizardConfig: String = "config.yml", executorDropwizardConfig: String = "executor.yml")

@@ -62,3 +62,8 @@ Scaling
 =======
 
 You can scale tasks dynamically by calling `http://<master>:<artifact.port>/scale/<instances>` e.g. `http://master:6666/scale/6` means you want to scale to 6 tasks (no matter if this is upscale or downscale, both should work).
+
+Updating producer properties
+============================
+
+You may provide configurations for producers used in executors by adding configurations to `producer.config` file. This changes will take effect when running new tasks, e.g. if you add some properties, all tasks executed after that will see that changes.
