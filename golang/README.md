@@ -39,7 +39,6 @@ Running
 
 You will need a running Mesos master and slaves to run. The following commands should be launched on Mesos Master node.
 
-**Static partitioning configuration:**   
 ```
 $ cd <framework-location>
 $ ./framework --master master:5050 --schema.registry http://192.168.3.1:8081 --broker.list 192.168.3.1:9092 --topic logs
