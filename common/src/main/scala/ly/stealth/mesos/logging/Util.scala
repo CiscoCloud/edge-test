@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,17 +17,17 @@
 
 package ly.stealth.mesos.logging
 
-import java.util.regex.Pattern
-import java.util
-import scala.collection.JavaConversions._
-import scala.util.parsing.json.JSON
-import java.io.{IOException, OutputStream, InputStream}
-import java.util.Date
 import java.text.SimpleDateFormat
-import org.apache.mesos.Protos._
+import java.util
+import java.util.Date
+
 import org.apache.mesos.Protos
+import org.apache.mesos.Protos._
+
+import scala.collection.JavaConversions._
 
 object Util {
+
   object Str {
     def dateTime(date: Date): String = {
       new SimpleDateFormat("yyyy-MM-dd hh:mm:ssX").format(date)
@@ -123,7 +123,7 @@ object Util {
         s += attr.getName + ":"
 
         if (attr.hasText) s += attr.getText.getValue
-        if (attr.hasScalar) s +=  "%.2f".format(attr.getScalar.getValue)
+        if (attr.hasScalar) s += "%.2f".format(attr.getScalar.getValue)
       }
 
       s
@@ -152,4 +152,5 @@ object Util {
       s.substring(s.length - maxLen)
     }
   }
+
 }
