@@ -1,0 +1,33 @@
+---
+- name: Install Oracle Java7
+  hosts: tag_exhibitor_True
+  sudo: True
+  tasks:
+    - name: add webupd8 apt key
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: EEA14886
+      notify:
+        - accept oracle license
+        - install oracle java7
+
+    - name: add webupd8 apt repo
+      apt_repository:
+        repo: 'deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main'
+        state: present
+      notify:
+        - accept oracle license
+        - install oracle java7
+
+  handlers:
+    - name: accept oracle license
+      debconf:
+        name: oracle-java7-installer
+        question: shared/accepted-oracle-license-v1-1
+        vtype: select
+        value: true
+
+    - name: install oracle java7
+      apt:
+        name: oracle-java7-installer
+        update_cache: yes

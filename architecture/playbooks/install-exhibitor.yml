@@ -1,0 +1,73 @@
+---
+- name: Install Exhibitor
+  hosts: tag_exhibitor_True
+  sudo: True
+  vars:
+    exhibitor_upstart: templates/upstart/exhibitor.conf
+    exhibitor_defconfig: templates/exhibitor.properties
+    exhibitor_s3creds: templates/s3credentials
+  tasks:
+    # TODO: move maven dependency to base AMI
+    - name: install maven
+      apt: name=maven state=present
+
+    - name: create exhibitor install directory
+      file:
+        path: "{{ exhibitor_install_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: create exhibitor config directory
+      file:
+        path: "{{ exhibitor_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: download exhibitor maven pom file
+      get_url:
+        url: "{{ exhibitor_maven_url }}"
+        dest: "{{ exhibitor_install_dir }}"
+      notify: build exhibitor
+
+    - name: create exhibitor upstart script
+      template:
+        src: "{{ exhibitor_upstart }}"
+        dest: "{{ upstart_dir }}/exhibitor.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart exhibitor service
+
+    - name: create exhibitor default config file
+      template:
+        src: "{{ exhibitor_defconfig }}"
+        dest: "{{ exhibitor_defaultconfig }}"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart exhibitor service
+
+    - name: create s3 credentials file
+      template:
+        src: "{{ exhibitor_s3creds }}"
+        dest: "{{ exhibitor_s3credentials }}"
+        owner: root
+        group: root
+        mode: 0400
+      notify: restart exhibitor service
+
+  handlers:
+    - name: build exhibitor
+      command: mvn clean package 
+      args: 
+        chdir: "{{ exhibitor_install_dir }}"
+        creates: "{{ exhibitor_install_dir }}/target/exhibitor-{{ exhibitor_version }}.jar"
+
+    - name: restart exhibitor service
+      service:
+        name: exhibitor
+        state: restarted
