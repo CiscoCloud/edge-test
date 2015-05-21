@@ -1,1 +1,1 @@
-include 'latencies-calc', 'dropwizard'
+include 'latencies-calc', 'models','dropwizard'
