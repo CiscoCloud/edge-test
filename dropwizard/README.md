@@ -29,7 +29,7 @@ You will need a running Mesos master and slaves to run. The following commands s
 
 ```
 $ cd <framework-location>
-$ java -jar logging-mesos-0.1.jar --master master:5050 --user vagrant --executor logging-mesos-0.1.jar --schema.registry http://192.168.3.1:8081 --broker.list 192.168.3.1:9092 --topic logs
+$ java -jar logging-mesos-0.1.jar --master master:5050 --user vagrant --executor logging-mesos-0.1.jar --producer.config producer.config --topic logs
 ```
 
 *List of available flags:*
@@ -42,7 +42,7 @@ $ java -jar logging-mesos-0.1.jar --master master:5050 --user vagrant --executor
 --instances=1: Number of tasks to run.
 --master="127.0.0.1:5050": Mesos Master address <ip:port>.
 --mem.per.task=256: Memory per task.
---schema.registry.url: Avro Schema Registry URL.
+--producer.config: Producer properties file name.
 --topic: Topic to produce transformed data to.
 --user: Mesos user to run for.
 ```
