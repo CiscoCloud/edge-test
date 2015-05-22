@@ -25,6 +25,13 @@
         type: all
         cidr_ip: 0.0.0.0/0
     register: basic_sg
+
+  - name: create an empty s3 bucket
+    s3:
+      bucket: "{{ exhibitor_s3bucket }}"
+      mode: create
+      region: "{{ region }}"
+
   - name: create instances
     local_action:
       module: ec2
