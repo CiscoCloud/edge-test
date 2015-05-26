@@ -1,0 +1,3 @@
+# Service discovery
+consul_dc: "{{ ec2_placement }}"
+cluster: "dev_cluster"

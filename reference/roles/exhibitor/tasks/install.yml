@@ -1,0 +1,53 @@
+---
+
+- name: create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - /opt/exhibitor
+    - /etc/exhibitor/conf
+
+- name: get maven build file
+  get_url:
+    url: "{{ maven_url }}"
+    dest: /opt/exhibitor
+  register: pom
+
+- name: create upstart script
+  template:
+    src: etc/init/exhibitor.conf.j2
+    dest: /etc/init/exhibitor.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart exhibitor
+
+- name: create default config
+  template:
+    src: etc/exhibitor/conf/default.j2
+    dest: /etc/exhibitor/conf/default
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart exhibitor
+
+- name: create s3 credentials
+  template:
+    src: etc/exhibitor/conf/credentials.j2
+    dest: /etc/exhibitor/conf/credentials
+    owner: root
+    group: root
+    mode: 0400
+  notify: restart exhibitor
+
+- name: build exhibitor
+  command: mvn clean package 
+  args: 
+    chdir: /opt/exhibitor
+    creates: "/opt/exhibitor/target/exhibitor-{{ version }}.jar"
+  notify: restart exhibitor
+  when: pom.changed

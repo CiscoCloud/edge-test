@@ -1,0 +1,46 @@
+---
+
+- name: install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - mesos
+
+- name: remove default configuration
+  file:
+    path: "/etc/mesos-{{ item }}"
+    state: absent
+  with_items:
+    - master
+    - slave
+
+- name: create zk configuration
+  template:
+    src: etc/mesos/zk.j2
+    dest: /etc/mesos/zk
+
+- name: create common configuration
+  template:
+    src: etc/default/mesos.j2
+    dest: /etc/default/mesos
+  notify: 
+    - restart mesos-master
+    - restart mesos-slave
+
+# TODO: figure out how to factor these into exactly 2 roles instead of variable-controlled
+
+- name: create master configuration
+  template:
+    src: etc/default/mesos-master.j2
+    dest: /etc/default/mesos-master
+  notify: restart mesos-master
+  when: mode == "master" or mode == "both"
+
+- name: create slave configuration
+  template:
+    src: etc/default/mesos-slave.j2
+    dest: /etc/default/mesos-slave
+  notify: restart mesos-slave
+  when: mode == "slave" or mode == "both"

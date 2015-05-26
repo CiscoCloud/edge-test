@@ -1,0 +1,93 @@
+# {{ ansible_managed }}
+
+description "kafka"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+
+limit nofile 8192 8192
+
+script
+	base_dir=/opt/kafka
+	LOG_DIR="$base_dir/logs"
+
+	if [ ! -d "$LOG_DIR" ]; then
+	    mkdir -p "$LOG_DIR"
+	fi
+
+	if [ -z "$SCALA_VERSION" ]; then
+	        SCALA_VERSION=2.10.4
+	fi
+
+	if [ -z "$SCALA_BINARY_VERSION" ]; then
+	        SCALA_BINARY_VERSION=2.10
+	fi
+
+	# run ./gradlew copyDependantLibs to get all dependant jars in a local dir
+	for file in $base_dir/core/build/dependant-libs-${SCALA_VERSION}*/*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	for file in $base_dir/examples/build/libs//kafka-examples*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	for file in $base_dir/contrib/hadoop-consumer/build/libs//kafka-hadoop-consumer*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	for file in $base_dir/contrib/hadoop-producer/build/libs//kafka-hadoop-producer*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	for file in $base_dir/clients/build/libs/kafka-clients*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	# classpath addition for release
+	for file in $base_dir/libs/*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	for file in $base_dir/core/build/libs/kafka_${SCALA_BINARY_VERSION}*.jar;
+	do
+	  CLASSPATH=$CLASSPATH:$file
+	done
+
+	# JMX settings
+	if [ -z "$KAFKA_JMX_OPTS" ]; then
+	  KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false "
+	fi
+
+	# JMX port to use
+	if [  $JMX_PORT ]; then
+	  KAFKA_JMX_OPTS="$KAFKA_JMX_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT "
+	fi
+
+	KAFKA_LOG4J_OPTS="-Dlog4j.configuration=file:$base_dir/config/log4j.properties"
+	KAFKA_LOG4J_OPTS="-Dkafka.logs.dir=$LOG_DIR $KAFKA_LOG4J_OPTS"
+
+	KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+
+	# JVM performance options
+	if [ -z "$KAFKA_JVM_PERFORMANCE_OPTS" ]; then
+	  KAFKA_JVM_PERFORMANCE_OPTS="-server -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:+CMSScavengeBeforeRemark -XX:+DisableExplicitGC -Djava.awt.headless=true"
+	fi
+
+	# GC options
+	GC_LOG_FILE_NAME='server-gc.log'
+	KAFKA_GC_LOG_OPTS="-Xloggc:$LOG_DIR/server-gc.log -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps "
+
+    exec start-stop-daemon --start -c root --exec /usr/bin/java --name kafka \
+        -- $KAFKA_HEAP_OPTS $KAFKA_JVM_PERFORMANCE_OPTS $KAFKA_GC_LOG_OPTS \
+        $KAFKA_JMX_OPTS $KAFKA_LOG4J_OPTS -cp $CLASSPATH kafka.Kafka \
+        /opt/kafka/config/server.properties
+end script

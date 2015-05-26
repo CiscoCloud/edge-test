@@ -1,0 +1,19 @@
+---
+
+- name: accept Oracle license
+  debconf:
+    name: "oracle-java7-installer"
+    question: "shared/accepted-oracle-license-v1-1"
+    value: "true"
+    vtype: "select"
+
+- name: install common packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - unzip
+    - git
+    - mercurial
+    - oracle-java7-installer

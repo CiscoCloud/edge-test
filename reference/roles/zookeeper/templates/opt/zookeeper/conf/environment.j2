@@ -1,0 +1,56 @@
+# {{ ansible_managed }}
+
+NAME=zookeeper
+USER=root
+GROUP=root
+
+PIDDIR=/var/run/$NAME
+PIDFILE=$PIDDIR/$NAME.pid
+
+ZOOBINDIR=/opt/zookeeper/bin
+ZOOKEEPER_PREFIX="${ZOOBINDIR}/.."
+ZOOCFGDIR="${ZOOKEEPER_PREFIX}/conf"
+ZOOCFG="${ZOOCFGDIR}/zoo.cfg"
+ZOOLOGDIR=/var/log/$NAME
+
+ZOODATADIR="{{ zookeeper_data_dir }}"
+
+if [ "$JAVA_HOME" != "" ]; then
+  JAVA="$JAVA_HOME/bin/java"
+else
+  JAVA=$(which java)
+fi
+
+CLASSPATH="$ZOOCFGDIR:$CLASSPATH"
+
+for i in "$ZOOBINDIR"/../src/java/lib/*.jar
+do
+    CLASSPATH="$i:$CLASSPATH"
+done
+
+#make it work in the binary package
+#(use array for LIBPATH to account for spaces within wildcard expansion)
+if [ -e "${ZOOKEEPER_PREFIX}"/share/zookeeper/zookeeper-*.jar ]; then
+  LIBPATH=("${ZOOKEEPER_PREFIX}"/share/zookeeper/*.jar)
+else
+  #release tarball format
+  for i in "$ZOOBINDIR"/../zookeeper-*.jar
+  do
+    CLASSPATH="$i:$CLASSPATH"
+  done
+  LIBPATH=("${ZOOBINDIR}"/../lib/*.jar)
+fi
+
+for i in "${LIBPATH[@]}"
+do
+    CLASSPATH="$i:$CLASSPATH"
+done
+
+# TODO
+#USER=$NAME
+#GROUP=$NAME
+
+ZOOMAIN="org.apache.zookeeper.server.quorum.QuorumPeerMain"
+ZOO_LOG4J_PROP="INFO,ROLLINGFILE"
+JMXLOCALONLY=false
+JAVA_OPTS=""

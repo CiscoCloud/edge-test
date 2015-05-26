@@ -1,0 +1,5 @@
+---
+
+- include: repos.yml
+- include: packages.yml
+- include: golang.yml

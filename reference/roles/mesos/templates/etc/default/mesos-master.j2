@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+
+{% if groups['mesos-master']|length > 1 %}
+ZK=`cat /etc/mesos/zk`
+{% endif %}
+
+export MESOS_QUORUM={{ groups['mesos-master']|length // 2 + 1 }}
+export MESOS_WORK_DIR="{{ work_dir }}"

@@ -1,0 +1,49 @@
+---
+
+- name: download package
+  get_url: 
+    url: "{{ mirror }}/zookeeper-{{ version }}/zookeeper-{{ version }}.tar.gz"
+    dest: /opt
+    sha256sum: "{{ sha256sum }}"
+
+- name: extract package
+  command: tar xzf zookeeper-{{ version }}.tar.gz
+  args:
+    chdir: /opt
+    creates: /opt/zookeeper-{{ version }}/zookeeper-{{ version }}.jar
+
+- name: create symbolic link to install dir
+  file:
+    src: /opt/zookeeper-{{ version }}
+    dest: /opt/zookeeper
+    state: link
+
+- name: create upstart script
+  template: 
+    src: etc/init/zookeeper.conf.j2
+    dest: /etc/init/zookeeper.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart zookeeper
+
+- name: create configuration files
+  template:
+    src: opt/zookeeper/conf/{{ item }}.j2
+    dest: /opt/zookeeper/conf/{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - environment
+    - zoo.cfg
+  notify: restart zookeeper
+
+- name: create zookeper myid
+  template:
+    src: opt/zookeeper/conf/myid.j2
+    dest: "{{ zookeeper_data_dir}}/myid"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart zookeeper

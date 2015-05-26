@@ -1,0 +1,26 @@
+---
+- name: deploy acl bootstrap
+  sudo: yes
+  copy:
+    src: usr/local/bin/consul-acl-bootstrap.sh
+    dest: /usr/local/bin
+    mode: u=rwx
+  tags:
+    - consul
+
+- name: upsert agent acl
+  sudo: yes
+  run_once: yes
+  command: /usr/local/bin/consul-acl-bootstrap.sh {{ consul_acl_master_token }} {{ consul_acl_agent_token }}
+  tags:
+    - consul
+
+- name: create agent_acl consul config
+  sudo: yes
+  template:
+    src: etc/consul/agent_acl.json.j2
+    dest: /etc/consul/agent_acl.json
+  notify:
+    - restart consul
+  tags:
+    - consul
