@@ -9,11 +9,13 @@ object Executor extends ExecutorBase {
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[ExecutorConfig]("executor") {
       opt[String]('p', "producer.config").required().text("Producer config file name.").action { (value, config) =>
-        config.copy(producerConfig = value)
+        config.producerConfig = value
+        config
       }
 
       opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
-        config.copy(topic = value)
+        config.topic = value
+        config
       }
 
       opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action { (value, config) =>
@@ -41,6 +43,6 @@ object Executor extends ExecutorBase {
   }
 }
 
-case class ExecutorConfig(producerConfig: String = "", topic: String = "", dropwizardConfig: String = "executor.yml")
+case class ExecutorConfig(dropwizardConfig: String = "executor.yml") extends ExecutorConfigBase
 
 

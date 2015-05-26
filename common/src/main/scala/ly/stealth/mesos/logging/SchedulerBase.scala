@@ -102,12 +102,12 @@ abstract class SchedulerBase extends Scheduler {
     }
   }
 
-  protected def config: ConfigBase
+  protected def config: SchedulerConfigBase
 
   protected def launchTask(offer: Offer): Option[TaskInfo]
 }
 
-trait ConfigBase {
+trait SchedulerConfigBase {
   var cpuPerTask: Double = 0.2
   var memPerTask: Double = 256
   var instances: Int = 1

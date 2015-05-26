@@ -82,3 +82,8 @@ trait ExecutorBase extends Executor {
     }.start()
   }
 }
+
+trait ExecutorConfigBase {
+  var producerConfig = ""
+  var topic = ""
+}

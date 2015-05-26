@@ -8,7 +8,7 @@ import org.apache.mesos.{MesosSchedulerDriver, Protos}
 object Scheduler extends SchedulerBase {
   private var schedulerConfig: SchedulerConfig = null
 
-  override protected def config: ConfigBase = schedulerConfig
+  override protected def config: SchedulerConfigBase = schedulerConfig
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[SchedulerConfig]("scheduler") {
@@ -137,4 +137,4 @@ object Scheduler extends SchedulerBase {
 
 private case class SchedulerConfig(master: String = "", user: String = "root", artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", producerConfig: String = "", topic: String = "",
-                                   dropwizardConfig: String = "config.yml", executorDropwizardConfig: String = "executor.yml") extends ConfigBase
+                                   dropwizardConfig: String = "config.yml", executorDropwizardConfig: String = "executor.yml") extends SchedulerConfigBase
