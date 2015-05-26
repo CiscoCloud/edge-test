@@ -1,0 +1,38 @@
+---
+
+- name: download package
+  get_url:
+    url: "{{ mirror }}/{{ version }}/kafka_{{ scala_version }}-{{ version }}.tgz"
+    dest: /opt
+  register: package
+
+- name: extract package
+  unarchive: 
+    src: /opt/kafka_{{ scala_version }}-{{ version }}.tgz
+    dest: /opt
+    copy: no
+  when: package.changed
+
+- name: create symbolic link to kafka folder
+  file:
+    src: /opt/kafka_{{ scala_version }}-{{ version }}
+    dest: /opt/kafka
+    state: link
+
+- name: create kafka server config
+  template:
+    src: opt/kafka/config/server.properties.j2
+    dest: /opt/kafka/config/server.properties
+    owner: root 
+    group: root 
+    mode: 0644
+  notify: restart kafka
+
+- name: create upstart script
+  template: 
+    src: etc/init/kafka.conf.j2
+    dest: /etc/init/kafka.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart kafka

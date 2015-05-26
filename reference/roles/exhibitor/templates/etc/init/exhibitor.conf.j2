@@ -1,0 +1,24 @@
+# {{ ansible_managed }}
+
+description "exhibitor"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+
+limit nofile 8192 8192
+
+script
+  PORT=8080
+  JAR=/opt/exhibitor/target/exhibitor-{{ version }}.jar
+
+  exec start-stop-daemon --start -c root --exec /usr/bin/java --name exhibitor \
+    -- -jar $JAR -c s3 --s3config {{ s3bucket }}:{{ name_tag }} \
+    --s3credentials {{ s3credentials }} --s3region {{ s3region }} \
+    --defaultconfig {{ defaultconfig }} --port $PORT \
+    --headingtext {{ name_tag }} --jquerystyle black \
+    --hostname {{ ansible_eth0.ipv4.address }} \
+    # hard mode: set this to false
+    --nodemodification true
+end script

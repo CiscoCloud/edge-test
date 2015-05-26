@@ -1,0 +1,8 @@
+---
+
+version: 1.5.5
+maven_url: https://raw.githubusercontent.com/Netflix/exhibitor/master/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml
+defaultconfig: /etc/exhibitor/conf/default
+s3credentials: /etc/exhibitor/conf/credentials
+s3bucket: exhibitor-a948hgx3
+s3region: us-west-1
