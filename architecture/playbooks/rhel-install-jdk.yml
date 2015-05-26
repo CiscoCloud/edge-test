@@ -1,0 +1,12 @@
+---
+- name: Install Oracle Java 7 JDK
+  hosts: tag_exhibitor_True
+  sudo: True
+  vars:
+    - license: oraclelicense=accept-securebackup-cookie
+    - package: http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.rpm
+  tasks:
+    - name: download oracle jdk 7u79
+      command: curl -LO --cookie {{ license }} {{ package }} chdir=/opt creates=jdk-7u79-linux-x64.rpm
+    - name: install jdk
+      yum: name=/opt/jdk-7u79-linux-x64.rpm state=present

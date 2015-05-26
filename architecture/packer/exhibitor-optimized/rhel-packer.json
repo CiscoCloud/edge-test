@@ -5,16 +5,16 @@
     {
       "type": "amazon-ebs",
       "region": "us-west-1",
-      "source_ami": "ami-5c120b19",
+      "source_ami": "ami-d114f295",
       "instance_type": "t2.small",
-      "ssh_username": "ubuntu",
+      "ssh_username": "ec2-user",
       "ami_name": "zk-exhibitor-{{isotime | clean_ami_name}}",
-      "ami_description": "Zookeeper/Exhibitor via Ansible on Ubuntu 14.04 LTS",
+      "ami_description": "Zookeeper/Exhibitor via Ansible on Amazon Linux 2015.03",
       "ami_regions": [],
       "ami_groups": "all",
       "tags": {
-        "os:distribution": "Ubuntu",
-        "os:release": "14.04 LTS"
+        "os:distribution": "Amazon Linux",
+        "os:release": "2015.03"
       }
     }
   ],
@@ -22,7 +22,7 @@
     {
       "type": "shell",
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
-      "scripts": ["provision.sh"]
+      "scripts": ["rhel-provision.sh"]
     }
   ]
 }
