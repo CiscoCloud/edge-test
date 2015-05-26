@@ -7,13 +7,13 @@ import org.eclipse.jetty.server.{Server, ServerConnector}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 
-class HttpServer(port: Int, config: SchedulerConfigBase) {
+class HttpServer(config: SchedulerConfigBase) {
   val threadPool = new QueuedThreadPool(16)
   threadPool.setName("Jetty")
 
   val server = new Server(threadPool)
   val connector = new ServerConnector(server)
-  connector.setPort(port)
+  connector.setPort(config.artifactServerPort)
 
   val handler = new ServletContextHandler
   handler.addServlet(new ServletHolder(new Servlet()), "/")

@@ -155,7 +155,7 @@ object Util {
   }
 
   def copyAndClose(in: InputStream, out: OutputStream): Unit = {
-    val buffer = new Array[Byte](16 * 1024)
+    val buffer = new Array[Byte](128 * 1024)
     var actuallyRead = 0
 
     try {
