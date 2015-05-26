@@ -17,6 +17,7 @@
 
 package ly.stealth.mesos.logging
 
+import java.io.{IOException, InputStream, OutputStream}
 import java.text.SimpleDateFormat
 import java.util
 import java.util.Date
@@ -150,6 +151,32 @@ object Util {
     def suffix(s: String, maxLen: Int): String = {
       if (s.length <= maxLen) return s
       s.substring(s.length - maxLen)
+    }
+  }
+
+  def copyAndClose(in: InputStream, out: OutputStream): Unit = {
+    val buffer = new Array[Byte](16 * 1024)
+    var actuallyRead = 0
+
+    try {
+      while (actuallyRead != -1) {
+        actuallyRead = in.read(buffer)
+        if (actuallyRead != -1) out.write(buffer, 0, actuallyRead)
+      }
+    } finally {
+      try {
+        in.close()
+      }
+      catch {
+        case ignore: IOException =>
+      }
+
+      try {
+        out.close()
+      }
+      catch {
+        case ignore: IOException =>
+      }
     }
   }
 

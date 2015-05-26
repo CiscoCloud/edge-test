@@ -55,11 +55,7 @@ object Scheduler extends SchedulerBase {
         config.copy(topic = value)
       }
 
-      opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action { (value, config) =>
-        config.copy(dropwizardConfig = value)
-      }
-
-      opt[String]('f', "executor.dropwizard.config").optional().text("Executor dropwizard config yml file.").action { (value, config) =>
+      opt[String]('d', "executor.dropwizard.config").optional().text("Executor dropwizard config yml file.").action { (value, config) =>
         config.copy(executorDropwizardConfig = value)
       }
     }
@@ -73,7 +69,7 @@ object Scheduler extends SchedulerBase {
   def main(args: Array[String]) {
     parseConfig(args)
 
-    new HttpServer(schedulerConfig).run("server", schedulerConfig.dropwizardConfig)
+    val server = new HttpServer(schedulerConfig.artifactServerPort, schedulerConfig)
 
     val frameworkBuilder = FrameworkInfo.newBuilder()
     frameworkBuilder.setUser(schedulerConfig.user)
@@ -88,6 +84,7 @@ object Scheduler extends SchedulerBase {
     })
 
     val status = if (driver.run eq Status.DRIVER_STOPPED) 0 else 1
+    server.stop()
     System.exit(status)
   }
 
@@ -137,4 +134,4 @@ object Scheduler extends SchedulerBase {
 
 private case class SchedulerConfig(master: String = "", user: String = "root", artifactServerHost: String = "master", artifactServerPort: Int = 6666,
                                    executor: String = "", producerConfig: String = "", topic: String = "",
-                                   dropwizardConfig: String = "config.yml", executorDropwizardConfig: String = "executor.yml") extends SchedulerConfigBase
+                                   executorDropwizardConfig: String = "executor.yml") extends SchedulerConfigBase

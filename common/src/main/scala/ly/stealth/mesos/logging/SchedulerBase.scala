@@ -79,7 +79,7 @@ abstract class SchedulerBase extends Scheduler {
               driver.launchTasks(util.Arrays.asList(offer.getId), util.Arrays.asList(taskInfo), Filters.newBuilder().setRefuseSeconds(1).build)
             case None => driver.declineOffer(offer.getId)
           }
-        }
+        } else driver.declineOffer(offer.getId)
       }
     }
   }
