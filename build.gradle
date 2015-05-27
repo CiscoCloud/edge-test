@@ -41,3 +41,104 @@ project("latencies-calc") {
         compile files("libs/spark-streaming-kafka_2.10-1.4.0-SNAPSHOT.jar")
     }
 }
+
+project("common") {
+    version = '1.0'
+
+    jar {
+        doFirst {
+            from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+                exclude "META-INF/*.SF"
+                exclude "META-INF/*.DSA"
+                exclude "META-INF/*.RSA"
+            }
+        }
+    }
+
+    dependencies {
+        compile "org.apache.mesos:mesos:0.21.1"
+        compile ("org.apache.kafka:kafka_2.10:0.8.2.1") {
+	        exclude group: "org.slf4j"
+	    }
+        compile "org.eclipse.jetty:jetty-http:9.0.4.v20130625"
+        compile "org.eclipse.jetty:jetty-io:9.0.4.v20130625"
+        compile "org.eclipse.jetty:jetty-security:9.0.4.v20130625"
+        compile "org.eclipse.jetty:jetty-server:9.0.4.v20130625"
+        compile "org.eclipse.jetty:jetty-servlet:9.0.4.v20130625"
+        compile "org.eclipse.jetty:jetty-util:9.0.4.v20130625"
+        compile "javax.servlet:javax.servlet-api:3.0.1"
+        compile "log4j:log4j:1.2.16"
+        compile "org.codehaus.jackson:jackson-mapper-asl:1.9.13"
+        compile "org.apache.avro:avro:1.7.7"
+        compile ("io.confluent:kafka-avro-serializer:1.0") {
+	        exclude group: "org.slf4j"
+	    }
+        compile "com.google.protobuf:protobuf-java:2.5.0"
+    }
+}
+
+project("dropwizard") {
+    version = '0.1'
+    
+    jar.archiveName = "logging-mesos-${version}.jar"
+
+    buildDir = 'out/gradle'
+	libsDirName = '../../'
+
+	sourceSets {
+	    main {
+	        scala { srcDirs = ['src/scala'] }
+	    }
+	    test {
+	        scala { srcDirs = ['src/test'] }
+	    }
+	}
+
+	dependencies {
+        compile project(":common")
+	    compile 'io.dropwizard:dropwizard-core:0.8.1'
+	    testCompile 'junit:junit:4.12'
+	}
+
+	jar {
+	    dependsOn 'test'
+	    doFirst {
+	        from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+	            exclude "META-INF/*.SF"
+	            exclude "META-INF/*.DSA"
+	            exclude "META-INF/*.RSA"
+	        }
+	    }
+	    manifest.attributes("Main-Class": "ly.stealth.mesos.logging.Scheduler")
+	}
+}
+
+project("spray") {
+    version = '0.1'
+
+    jar.archiveName = "logging-mesos-${version}.jar"
+
+    dependencies {
+        compile project(":common")
+        compile "io.spray:spray-can:1.2.3"
+        compile "io.spray:spray-http:1.2.3"
+        compile "io.spray:spray-httpx:1.2.3"
+        compile "io.spray:spray-util:1.2.3"
+        compile "io.spray:spray-client:1.2.3"
+        compile "io.spray:spray-routing:1.2.3"
+        compile "com.typesafe.akka:akka-actor_2.10:2.2.3"
+        testCompile 'junit:junit:4.12'
+    }
+
+    jar {
+        dependsOn 'test'
+        doFirst {
+            from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+                exclude "META-INF/*.SF"
+                exclude "META-INF/*.DSA"
+                exclude "META-INF/*.RSA"
+            }
+        }
+        manifest.attributes("Main-Class": "ly.stealth.mesos.logging.Scheduler")
+    }
+}
