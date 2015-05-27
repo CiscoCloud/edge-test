@@ -1,0 +1,30 @@
+# Defines deployment design
+
+#- hosts: deployment
+#  sudo: True
+#  roles:
+#    - common
+#    - consul
+
+- hosts: exhibitor
+  sudo: True
+  roles:
+    - zookeeper
+    #- exhibitor
+
+#- hosts: kafka
+#  sudo: True
+#  roles:
+#    - kafka
+
+- hosts: mesos-master
+  sudo: True
+  roles:
+    - mesos
+    #- marathon
+
+- hosts: mesos-slave
+  sudo: True
+  roles:
+    - mesos
+    #- marathon

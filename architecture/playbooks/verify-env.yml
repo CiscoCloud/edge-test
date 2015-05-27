@@ -1,0 +1,12 @@
+---
+- name: verify aws environment
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: verify aws credentials
+      fail: msg="aws environment variable {{ item }} is not set"
+      when: lookup('env', item) == ""
+      with_items:
+        - AWS_ACCESS_KEY
+        - AWS_SECRET_KEY

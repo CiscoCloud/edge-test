@@ -1,0 +1,12 @@
+server:
+  applicationConnectors:
+  - type: http
+    port: 8090
+  adminConnectors:
+  - type: http
+    port: 8091
+
+logging:
+  level: INFO
+  loggers:
+    ly.stealth.mesos.logging: DEBUG

@@ -1,0 +1,97 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# This Vagrantfile spins up development VM's for Elodina 
+#
+# The VMs are as follows:
+#   * el0001
+#   * el0002
+#   * ...
+#
+# The VMs use the 172.31.0.0/24 network and have IPs allocated statically:
+#   * el0001  - 172.31.0.10
+#   * el0002  - 172.31.0.11
+#   * ...
+
+# -------------
+# VM box config
+vm_box = 'ubuntu/trusty64'
+vm_box_url = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
+
+# Number of nodes
+NGENERIC = 3
+
+# Nodes config can be overriden here
+nodes = {
+    'el0001' => {
+        :ram   => 1024,
+        :vcpus => 1
+    }
+}
+
+# Default config
+nodes.default = {
+    :ram       => 1024,
+    :vcpus     => 1,
+    :network   => '172.31.0',
+    :netmask   => '255.255.255.0',
+    :bootstrap => ['/bin/true']
+}
+
+# Ansible provisioner config
+ansible_provision = Proc.new do |ansible|
+  ansible.playbook = "site.yml"
+  ansible.groups = {
+    #"exhibitor"          => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    #"kafka"              => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    #"zookeeper"           => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "consul-server"       => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "mesos-master"        => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "dev_cluster"         => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "vagrant"             => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "deployment"          => ['exhibitor','kafka','zookeeper']
+  }
+  ansible.limit = 'deployment'
+end
+
+# -------------
+# Vagrant magic
+Vagrant.configure('2') do |config|
+
+    # Generic nodes
+    (1..NGENERIC).each do |id|
+        node_id = id.to_s.rjust(4,'0')
+        node_name = 'el' + node_id
+
+        config.vm.define node_name do |config|
+            config.vm.box = vm_box
+            config.vm.box_url = vm_box_url
+
+            config.vm.hostname = "#{node_name}.vagrant.elodina.net"
+
+            config.vm.network :private_network,
+                ip: nodes[node_name][:network].to_s.empty? ? "#{nodes.default[:network]}.#{10+id}" : "#{nodes[node_name][:network]}.#{10+id}",
+                netmask: nodes[node_name][:netmask].to_s.empty? ? nodes.default[:netmask] : nodes[node_name][:netmask]
+
+            config.vm.provider :virtualbox do |vb|
+                vb.name = node_name + "_#{Time.now.to_i}"
+                vb.customize [
+                    "modifyvm", :id, 
+                    "--memory", nodes[node_name][:ram].to_s.empty? ? nodes.default[:ram] : nodes[node_name][:ram]
+                ]
+                vb.cpus = nodes[node_name][:vcpus].to_s.empty? ? nodes.default[:vcpus] : nodes[node_name][:vcpus]
+            end
+
+            # Pre-bootstrap scripts, if needed
+            if nodes[node_name][:bootstrap]
+                nodes[node_name][:bootstrap].each do |bootstrap|
+                    config.vm.provision :shell, :path => bootstrap
+                end
+            end
+
+            # Provision with Ansible
+            config.vm.provision "ansible", &ansible_provision
+
+        end
+    end
+end
