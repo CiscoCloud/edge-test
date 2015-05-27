@@ -17,7 +17,7 @@ class ExecutorEndpoint(config: ExecutorConfig) extends App[Configuration] {
 
 @Path("/")
 class Handler(config: ExecutorConfig) {
-  private val transformer = new Transform(config)
+  private val transformer = new Transform(config.base)
 
   @POST
   def handle(body: Array[Byte], @HeaderParam("Content-Type") contentType: String) {

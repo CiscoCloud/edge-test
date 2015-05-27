@@ -8,22 +8,14 @@ object Executor extends ExecutorBase {
 
   def parseConfig(args: Array[String]) {
     val parser = new scopt.OptionParser[ExecutorConfig]("executor") {
-      opt[String]('p', "producer.config").required().text("Producer config file name.").action { (value, config) =>
-        config.producerConfig = value
-        config
-      }
-
-      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
-        config.topic = value
-        config
-      }
+      override def errorOnUnknownArgument = false
 
       opt[String]('d', "dropwizard.config").optional().text("Dropwizard config yml file.").action { (value, config) =>
         config.copy(dropwizardConfig = value)
       }
     }
 
-    parser.parse(args, ExecutorConfig()) match {
+    parser.parse(args, ExecutorConfig(base = parseExecutorConfig(args))) match {
       case Some(c) => this.config = c
       case None => sys.exit(1)
     }
@@ -43,6 +35,6 @@ object Executor extends ExecutorBase {
   }
 }
 
-case class ExecutorConfig(dropwizardConfig: String = "executor.yml") extends ExecutorConfigBase
+case class ExecutorConfig(base: ExecutorConfigBase, dropwizardConfig: String = "executor.yml")
 
 

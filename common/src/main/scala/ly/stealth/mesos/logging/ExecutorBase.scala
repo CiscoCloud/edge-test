@@ -11,6 +11,29 @@ trait ExecutorBase extends Executor {
 
   private val logger = Logger.getLogger(this.getClass)
 
+  def parseExecutorConfig(args: Array[String]): ExecutorConfigBase = {
+    val parser = new scopt.OptionParser[ExecutorConfigBase]("executor") {
+      override def errorOnUnknownArgument = false
+
+      opt[Int]('p', "port").optional().text("Port to bind to.").action { (value, config) =>
+        config.copy(port = value)
+      }
+
+      opt[String]('c', "producer.config").required().text("Producer config file name.").action { (value, config) =>
+        config.copy(producerConfig = value)
+      }
+
+      opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
+        config.copy(topic = value)
+      }
+    }
+
+    parser.parse(args, ExecutorConfigBase()) match {
+      case Some(config) => config
+      case None => sys.exit(1)
+    }
+  }
+
   protected def start()
 
   override def registered(driver: ExecutorDriver, executorInfo: ExecutorInfo, framework: FrameworkInfo, slave: SlaveInfo) {
@@ -83,7 +106,4 @@ trait ExecutorBase extends Executor {
   }
 }
 
-trait ExecutorConfigBase {
-  var producerConfig = ""
-  var topic = ""
-}
+case class ExecutorConfigBase(port: Int = 0, producerConfig: String = "", topic: String = "")

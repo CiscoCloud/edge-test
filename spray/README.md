@@ -1,16 +1,16 @@
-edge-test dropwizard
+edge-test spray
 ================
 
 Pre-Requisites
 ==============
 
-- java 1.7 or higher   
+- java 1.7 or higher
 - Apache Mesos 0.19 or newer
- 
+
 Build Instructions
 =================
 
-- Get the project   
+- Get the project
 ```
 $ git clone https://github.com/CiscoCloud/edge-test.git
 ```
@@ -19,7 +19,7 @@ $ git clone https://github.com/CiscoCloud/edge-test.git
 ```
 $ ./gradlew clean jar
 ```
-- Place the built jar file and `executor.yml` somewhere on Mesos Master node
+- Place the built jar file somewhere on Mesos Master node
 
 Running
 =======
