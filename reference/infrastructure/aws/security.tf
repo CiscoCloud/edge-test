@@ -1,7 +1,15 @@
+# Security groups and rules
+
 resource "aws_security_group" "clusterwide" {
   name = "${var.cluster_name}"
   description = "${var.cluster_name} security group"
-  vpc_id = "${var.vpc_id}"
+  vpc_id = "${aws_vpc.vpc.id}"
+
+  tags {
+      Name = "${var.cluster_name}"
+  }
+
+  depends_on = ["aws_vpc.vpc"]
 }
 
 resource "aws_security_group_rule" "ingress_inter_node" {

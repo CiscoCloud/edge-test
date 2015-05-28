@@ -5,18 +5,24 @@
     url: "{{ mirror }}/zookeeper-{{ version }}/zookeeper-{{ version }}.tar.gz"
     dest: /opt
     sha256sum: "{{ sha256sum }}"
+  tags:
+    - zookeeper
 
 - name: extract package
   command: tar xzf zookeeper-{{ version }}.tar.gz
   args:
     chdir: /opt
     creates: /opt/zookeeper-{{ version }}/zookeeper-{{ version }}.jar
+  tags:
+    - zookeeper
 
 - name: create symbolic link to install dir
   file:
     src: /opt/zookeeper-{{ version }}
     dest: /opt/zookeeper
     state: link
+  tags:
+    - zookeeper
 
 - name: create upstart script
   template: 
@@ -26,6 +32,8 @@
     group: root
     mode: 0644
   notify: restart zookeeper
+  tags:
+    - zookeeper
 
 - name: create configuration files
   template:
@@ -38,8 +46,17 @@
     - environment
     - zoo.cfg
   notify: restart zookeeper
+  tags:
+    - zookeeper
 
-- name: create zookeper myid
+- name: create data dir
+  file:
+    path: "{{ zookeeper_data_dir }}"
+    state: directory
+  tags:
+    - zookeeper
+
+- name: create myid
   template:
     src: opt/zookeeper/conf/myid.j2
     dest: "{{ zookeeper_data_dir}}/myid"
@@ -47,3 +64,5 @@
     group: root
     mode: 0644
   notify: restart zookeeper
+  tags:
+    - zookeeper

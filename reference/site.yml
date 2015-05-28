@@ -1,10 +1,10 @@
 # Defines deployment design
 
-#- hosts: deployment
-#  sudo: True
-#  roles:
-#    - common
-#    - consul
+- hosts: deployment
+  sudo: True
+  roles:
+    - common
+    - consul
 
 - hosts: exhibitor
   sudo: True
