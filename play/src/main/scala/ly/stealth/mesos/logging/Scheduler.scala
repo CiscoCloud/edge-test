@@ -31,7 +31,7 @@ object Scheduler extends SchedulerBase {
   def main(args: Array[String]) {
     schedulerConfig = parseSchedulerConfig(args)
 
-    start(schedulerConfig, "Spray LogLine Transform Framework")
+    start(schedulerConfig, "Play LogLine Transform Framework")
   }
 
   override def launchTask(offer: Offer): Option[TaskInfo] = {
@@ -59,7 +59,7 @@ object Scheduler extends SchedulerBase {
     val path = this.schedulerConfig.executor.split("/").last
     val producerConfigPath = this.schedulerConfig.producerConfig.split("/").last
     val cmd = s"java -cp ${this.schedulerConfig.executor} ly.stealth.mesos.logging.Executor " +
-      s"--producer.config ${this.schedulerConfig.producerConfig} --topic ${this.schedulerConfig.topic} --port ${port}"
+      s"--producer.config ${this.schedulerConfig.producerConfig} --topic ${this.schedulerConfig.topic} --port $port"
     ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue(id))
       .setCommand(CommandInfo.newBuilder()
       .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.schedulerConfig.artifactServerHost}:${this.schedulerConfig.artifactServerPort}/resource/$path"))

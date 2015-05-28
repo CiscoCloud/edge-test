@@ -1,6 +1,9 @@
 subprojects {
     apply plugin: 'scala'
 
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
     repositories {
         mavenCentral()
         maven {
@@ -151,6 +154,31 @@ project("finagle") {
     dependencies {
         compile project(":common")
         compile "com.twitter:finagle-http_2.10:6.25.0"
+        testCompile 'junit:junit:4.12'
+    }
+
+    jar {
+        dependsOn 'test'
+        doFirst {
+            from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+                exclude "META-INF/*.SF"
+                exclude "META-INF/*.DSA"
+                exclude "META-INF/*.RSA"
+            }
+        }
+        manifest.attributes("Main-Class": "ly.stealth.mesos.logging.Scheduler")
+    }
+}
+
+project("play") {
+    version = '0.1'
+
+    jar.archiveName = "logging-mesos-${version}.jar"
+
+    dependencies {
+        compile project(":common")
+        compile "com.typesafe.play:play_2.10:2.4.0"
+        compile "com.typesafe.play:play-netty-server_2.10:2.4.0"
         testCompile 'junit:junit:4.12'
     }
 

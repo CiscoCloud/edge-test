@@ -18,15 +18,12 @@
 
 package ly.stealth.mesos.logging
 
-import java.net.InetSocketAddress
-
-import com.twitter.finagle.Service
-import com.twitter.finagle.builder.{Server, ServerBuilder}
-import com.twitter.finagle.http.{Http, Request, Response, RichHttp}
-import com.twitter.util.Future
 import org.apache.log4j.Logger
 import org.apache.mesos.MesosExecutorDriver
 import org.apache.mesos.Protos._
+import play.api.mvc._
+import play.api.routing.sird._
+import play.core.server._
 
 object Executor extends ExecutorBase {
   private var config: ExecutorConfigBase = null
@@ -46,23 +43,27 @@ object Executor extends ExecutorBase {
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
+  Thread.currentThread().setContextClassLoader(this.getClass.getClassLoader)
+
   private val logger = Logger.getLogger(this.getClass)
   private val transformer = new Transform(config)
 
-  val service: Service[Request, Response] = new Service[Request, Response] {
-    def apply(req: Request): Future[Response] = {
-      req.headerMap.get("Content-Type") match {
-        case Some(contentType) => transformer.transform(req.getContent().array(), contentType)
-        case None => logger.warn("no Content-Type header provided")
+  NettyServer.fromRouter(ServerConfig(
+    port = Some(config.port)
+  )) {
+    case POST(p"/") => Action(BodyParsers.parse.raw) { request =>
+      val data = for {
+        contentType <- request.headers.get("Content-Type")
+        body <- request.body.asBytes()
+      } yield (contentType, body)
+
+      data match {
+        case Some((contentType, body)) => transformer.transform(body, contentType)
+        case None => logger.warn("Either no Content-Type header provided or body is empty")
       }
-      Future.value(Response())
+
+      Results.Ok
     }
   }
-
-  val server: Server = ServerBuilder()
-    .codec(RichHttp[Request](Http()))
-    .bindTo(new InetSocketAddress(config.port))
-    .name("LogLine Transform")
-    .build(service)
 }
 

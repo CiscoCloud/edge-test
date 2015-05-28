@@ -1,1 +1,1 @@
-include 'latencies-calc', 'common', 'dropwizard', 'finagle', 'spray'
+include 'latencies-calc', 'common', 'dropwizard', 'finagle', 'spray', 'play'
