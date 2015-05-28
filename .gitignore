@@ -25,7 +25,9 @@ _testmain.go
 
 .DS_Store
 
-.iml
+*.iml
+*.jar
+*.zip
 .idea/
 build/
 .gradle
