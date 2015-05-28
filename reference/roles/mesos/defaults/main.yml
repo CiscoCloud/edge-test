@@ -1,0 +1,12 @@
+# Mode
+mesos_mode: both
+
+# Dirs
+mesos_work_dir: /var/lib/mesos/work_dir
+mesos_replicated_log_dir: "{{ mesos_work_dir }}/replicated_log"
+
+# Flags
+mesos_isolation: ""
+mesos_quorum: "{{ groups['mesos-master'] | intersect(groups[cluster]) | length // 2 + 1 }}"
+mesos_recovery_slave_removal_limit: 20%
+mesos_log_auto_initialize: ?no-log_auto_initialize

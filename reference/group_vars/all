@@ -1,3 +1,4 @@
 # Service discovery
-consul_dc: "{{ ec2_placement }}"
 cluster: "dev_cluster"
+datacenter: "{{ ec2_placement }}"
+consul_dc: "{{ datacenter }}"
