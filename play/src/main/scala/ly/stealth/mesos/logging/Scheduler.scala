@@ -31,7 +31,7 @@ object Scheduler extends SchedulerBase {
   def main(args: Array[String]) {
     schedulerConfig = parseSchedulerConfig(args)
 
-    start(schedulerConfig, "Unfiltered LogLine Transform Framework")
+    start(schedulerConfig, "Play LogLine Transform Framework")
   }
 
   override def launchTask(offer: Offer): Option[TaskInfo] = {

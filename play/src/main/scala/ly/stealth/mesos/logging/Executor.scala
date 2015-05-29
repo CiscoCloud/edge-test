@@ -18,12 +18,12 @@
 
 package ly.stealth.mesos.logging
 
-import java.io.{ByteArrayOutputStream, InputStream}
-
 import org.apache.log4j.Logger
 import org.apache.mesos.MesosExecutorDriver
 import org.apache.mesos.Protos._
-import unfiltered.response.ResponseString
+import play.api.mvc._
+import play.api.routing.sird._
+import play.core.server._
 
 object Executor extends ExecutorBase {
   private var config: ExecutorConfigBase = null
@@ -43,38 +43,27 @@ object Executor extends ExecutorBase {
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
+  Thread.currentThread().setContextClassLoader(this.getClass.getClassLoader)
+
   private val logger = Logger.getLogger(this.getClass)
   private val transformer = new Transform(config)
 
-  val plan = unfiltered.netty.cycle.Planify {
-    case request =>
-      request.headers("Content-Type").toList.headOption match {
-        case Some(contentType) => transformer.transform(toBytes(request.inputStream), contentType)
-        case None => logger.warn("no Content-Type header provided")
+  NettyServer.fromRouter(ServerConfig(
+    port = Some(config.port)
+  )) {
+    case POST(p"/") => Action(BodyParsers.parse.raw) { request =>
+      val data = for {
+        contentType <- request.headers.get("Content-Type")
+        body <- request.body.asBytes()
+      } yield (contentType, body)
+
+      data match {
+        case Some((contentType, body)) => transformer.transform(body, contentType)
+        case None => logger.warn("Either no Content-Type header provided or body is empty")
       }
-      ResponseString("")
-  }
 
-  new Thread {
-    override def run() {
-      unfiltered.netty.Server.http(config.port).plan(plan).run()
+      Results.Ok
     }
-  }.start()
-
-  private def toBytes(is: InputStream): Array[Byte] = {
-    val buffer = new ByteArrayOutputStream()
-    val data = new Array[Byte](16384)
-
-    var nRead = -1
-    while ( {
-      nRead = is.read(data, 0, data.length)
-      nRead != -1
-    }) {
-      buffer.write(data, 0, nRead)
-    }
-
-    buffer.flush()
-    buffer.toByteArray
   }
 }
 
