@@ -53,7 +53,7 @@ object Main extends App {
   val cassandraConnector = CassandraConnector(sparkConfig)
   cassandraConnector.withSessionDo(session => {
     session.execute("CREATE KEYSPACE IF NOT EXISTS spark_analysis WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
-    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventname text, second int, operation text, value int, ntpstatus int, cnt int, PRIMARY KEY(eventname, second, operation))")
+    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventname text, second int, operation text, value int, ntpstatus int, cnt int, PRIMARY KEY(operation, second, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
   })
 
   val consumerConfig = Map(
