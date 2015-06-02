@@ -22,7 +22,6 @@ if [ -z $1 ]; then
 fi
 
 URL=$1
-PAYLOAD='{"line": "i am line","source": "generated","tag": null,"logtypeid": 5,"timings": [{"eventName": "key1", "value": 123000},{"eventName": "key2", "value": 124000}]}'
 NUM_MSG=0
 while [  true ]; do
 	if [[ $NUM_MSG%1000 -eq 0 ]]
@@ -30,6 +29,6 @@ while [  true ]; do
  		echo produced $NUM_MSG messages
  	fi
 
- 	eval 'curl --data-binary "@test-json" --header "Content-Type: application/json" $URL'
+ 	eval 'curl -d "{\"line\": \"i am line\",\"source\": \"generated\",\"tag\": null,\"logtypeid\": 5,\"timings\": [{\"eventName\": \"key1\", \"value\": 123000},{\"eventName\": \"key2\", \"value\": 124000}]}" --header "Content-Type: application/json" $URL'
  	let NUM_MSG=NUM_MSG+1 
 done
