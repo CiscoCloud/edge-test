@@ -18,8 +18,6 @@
 
 package ly.stealth.mesos.logging
 
-import java.util.UUID
-
 import org.apache.mesos.Protos
 import org.apache.mesos.Protos._
 
@@ -41,7 +39,7 @@ object Scheduler extends SchedulerBase {
     val portOpt = ports.headOption.map(_.getBegin)
 
     if (cpus > schedulerConfig.cpuPerTask && mems > schedulerConfig.memPerTask && portOpt.nonEmpty) {
-      val id = "transform-" + UUID.randomUUID().toString
+      val id = s"play-${offer.getHostname}-${portOpt.get}"
       val taskId = TaskID.newBuilder().setValue(id).build()
       val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
         .setExecutor(this.createExecutor(id, portOpt.get))

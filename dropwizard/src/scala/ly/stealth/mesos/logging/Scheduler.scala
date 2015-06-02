@@ -18,8 +18,6 @@
 
 package ly.stealth.mesos.logging
 
-import java.util.UUID
-
 import org.apache.mesos.Protos
 import org.apache.mesos.Protos._
 
@@ -61,7 +59,7 @@ object Scheduler extends SchedulerBase {
     }
 
     if (cpus > schedulerConfig.base.cpuPerTask && mems > schedulerConfig.base.memPerTask && portOpt.nonEmpty && adminPortOpt.nonEmpty) {
-      val id = "transform-" + UUID.randomUUID().toString
+      val id = s"dropwizard-${offer.getHostname}-${portOpt.get}"
       val taskId = TaskID.newBuilder().setValue(id).build()
       val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
         .setExecutor(this.createExecutor(id, portOpt.get, adminPortOpt.get))
