@@ -23,24 +23,18 @@ import (
 	"github.com/CiscoCloud/edge-test/golang/transform"
 	"github.com/mesos/mesos-go/executor"
 	"os"
-	"strings"
 )
 
 var port = flag.Int("port", 0, "Port to bind to")
-var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
-var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var producerConfig = flag.String("producer.config", "", "Producer config file name.")
 var topic = flag.String("topic", "", "Topic to produce transformed data to.")
+var sync = flag.Bool("sync", false, "Flag to respond only after decoding-encoding is done.")
 
 func parseAndValidateExecutorArgs() {
 	flag.Parse()
 
-	if *schemaRegistryUrl == "" {
+	if *producerConfig == "" {
 		fmt.Println("schema.registry flag is required.")
-		os.Exit(1)
-	}
-
-	if *brokerList == "" {
-		fmt.Println("broker.list flag is required.")
 		os.Exit(1)
 	}
 
@@ -60,10 +54,10 @@ func main() {
 	fmt.Println("Starting Transform Executor")
 
 	executorConfig := transform.NewTransformExecutorConfig()
-	executorConfig.SchemaRegistryUrl = *schemaRegistryUrl
-	executorConfig.BrokerList = strings.Split(*brokerList, ",")
+	executorConfig.ProducerConfig = *producerConfig
 	executorConfig.Topic = *topic
 	executorConfig.Port = *port
+	executorConfig.Sync = *sync
 
 	driverConfig := executor.DriverConfig{
 		Executor: transform.NewTransformExecutor(executorConfig),

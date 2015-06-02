@@ -77,6 +77,10 @@ abstract class SchedulerBase extends Scheduler {
       opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
         config.copy(topic = value)
       }
+
+      opt[Boolean]('s', "sync").optional().text("Flag to respond only after decoding-encoding is done.").action { (value, config) =>
+        config.copy(sync = value)
+      }
     }
 
     parser.parse(args, SchedulerConfigBase()) match {
@@ -199,4 +203,4 @@ abstract class SchedulerBase extends Scheduler {
 case class SchedulerConfigBase(master: String = "", user: String = "root", cpuPerTask: Double = 0.2,
                                memPerTask: Double = 256, var instances: Int = 1, artifactServerHost: String = "master",
                                artifactServerPort: Int = 6666, executor: String = "", producerConfig: String = "",
-                               topic: String = "")
+                               topic: String = "", sync: Boolean = false)

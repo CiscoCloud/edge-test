@@ -50,14 +50,14 @@ type TransformSchedulerConfig struct {
 	// Number of task instances to run.
 	Instances int
 
-	// Avro Schema Registry url.
-	SchemaRegistryUrl string
-
-	// Comma separated list of brokers for producer.
-	BrokerList string
+	// Producer config file name.
+	ProducerConfig string
 
 	// Topic to produce transformed data to.
 	Topic string
+
+	// Flag to respond only after decoding-encoding is done.
+	Sync bool
 }
 
 func NewTransformSchedulerConfig() *TransformSchedulerConfig {
@@ -244,11 +244,13 @@ func (this *TransformScheduler) createExecutor(instanceId int32, port uint64) *m
 		Name:       proto.String("LogLine Transform Executor"),
 		Source:     proto.String("cisco"),
 		Command: &mesos.CommandInfo{
-			Value: proto.String(fmt.Sprintf("./%s --schema.registry %s --broker.list %s --topic %s --port %d",
-				this.config.ExecutorBinaryName, this.config.SchemaRegistryUrl, this.config.BrokerList, this.config.Topic, port)),
+			Value: proto.String(fmt.Sprintf("./%s --producer.config %s --topic %s --port %d --sync %t",
+				this.config.ExecutorBinaryName, this.config.ProducerConfig, this.config.Topic, port, this.config.Sync)),
 			Uris: []*mesos.CommandInfo_URI{&mesos.CommandInfo_URI{
 				Value:   proto.String(fmt.Sprintf("http://%s:%d/resource/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, path[len(path)-1])),
 				Extract: proto.Bool(true),
+			}, &mesos.CommandInfo_URI{
+				Value: proto.String(fmt.Sprintf("http://%s:%d/resource/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, this.config.ProducerConfig)),
 			}},
 		},
 	}

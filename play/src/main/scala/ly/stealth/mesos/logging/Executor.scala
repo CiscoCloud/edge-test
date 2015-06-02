@@ -58,7 +58,14 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
       } yield (contentType, body)
 
       data match {
-        case Some((contentType, body)) => transformer.transform(body, contentType)
+        case Some((contentType, body)) =>
+          if (config.sync) {
+            new Thread {
+              override def run() {
+                transformer.transform(body, contentType)
+              }
+            }.start()
+          } else transformer.transform(body, contentType)
         case None => logger.warn("Either no Content-Type header provided or body is empty")
       }
 

@@ -41,7 +41,7 @@ You will need a running Mesos master and slaves to run. The following commands s
 
 ```
 $ cd <framework-location>
-$ ./framework --master master:5050 --schema.registry http://192.168.3.1:8081 --broker.list 192.168.3.1:9092 --topic logs
+$ ./framework --master master:5050 --producer.config producer.config --topic logs
 ```
 
 *List of available flags:*
@@ -55,7 +55,8 @@ $ ./framework --master master:5050 --schema.registry http://192.168.3.1:8081 --b
 --instances=1: Number of tasks to run.
 --master="127.0.0.1:5050": Mesos Master address <ip:port>.
 --mem.per.task=256: Memory per task.
---schema.registry.url: Avro Schema Registry URL.
+--producer.config: Producer properties file name.
+--sync: Flag to respond only after decoding-encoding is done.
 --topic: Topic to produce transformed data to.
 ```
 

@@ -39,20 +39,15 @@ var executorArchiveName = flag.String("executor.archive", "executor.zip", "Execu
 var executorBinaryName = flag.String("executor.name", "executor", "Executor binary name contained in archive.")
 var cpuPerTask = flag.Float64("cpu.per.task", 0.2, "CPUs per task.")
 var memPerTask = flag.Float64("mem.per.task", 256, "Memory per task.")
-var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
-var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var producerConfig = flag.String("producer.config", "", "Producer config file name.")
 var topic = flag.String("topic", "", "Topic to produce transformed data to.")
+var sync = flag.Bool("sync", false, "Flag to respond only after decoding-encoding is done.")
 
 func parseAndValidateSchedulerArgs() {
 	flag.Parse()
 
-	if *schemaRegistryUrl == "" {
-		fmt.Println("schema.registry flag is required.")
-		os.Exit(1)
-	}
-
-	if *brokerList == "" {
-		fmt.Println("broker.list flag is required.")
+	if *producerConfig == "" {
+		fmt.Println("producer.config flag is required.")
 		os.Exit(1)
 	}
 
@@ -63,8 +58,6 @@ func parseAndValidateSchedulerArgs() {
 }
 
 func startArtifactServer(config *transform.TransformSchedulerConfig) {
-	//if the full path is given, take the last token only
-	path := strings.Split(*executorArchiveName, "/")
 	http.HandleFunc("/scale/", func(w http.ResponseWriter, r *http.Request) {
 		scaleTokens := strings.Split(r.URL.Path, "/")
 		scale, err := strconv.Atoi(scaleTokens[len(scaleTokens)-1])
@@ -73,8 +66,11 @@ func startArtifactServer(config *transform.TransformSchedulerConfig) {
 		}
 		config.Instances = scale
 	})
-	http.HandleFunc(fmt.Sprintf("/resource/%s", path[len(path)-1]), func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, *executorArchiveName)
+	http.HandleFunc(fmt.Sprintf("/resource/"), func(w http.ResponseWriter, r *http.Request) {
+		resourceTokens := strings.Split(r.URL.Path, "/")
+		resource := resourceTokens[len(resourceTokens)-1]
+		fmt.Println("Serving ", resource)
+		http.ServeFile(w, r, resource)
 	})
 	http.ListenAndServe(fmt.Sprintf("%s:%d", *artifactServerHost, *artifactServerPort), nil)
 }
@@ -98,9 +94,9 @@ func main() {
 	schedulerConfig.Instances = *instances
 	schedulerConfig.CpuPerTask = *cpuPerTask
 	schedulerConfig.MemPerTask = *memPerTask
-	schedulerConfig.SchemaRegistryUrl = *schemaRegistryUrl
-	schedulerConfig.BrokerList = *brokerList
+	schedulerConfig.ProducerConfig = *producerConfig
 	schedulerConfig.Topic = *topic
+	schedulerConfig.Sync = *sync
 
 	go startArtifactServer(schedulerConfig)
 
