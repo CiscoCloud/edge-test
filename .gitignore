@@ -24,3 +24,10 @@ _testmain.go
 *.prof
 
 .DS_Store
+
+*.iml
+*.jar
+*.zip
+.idea/
+build/
+.gradle

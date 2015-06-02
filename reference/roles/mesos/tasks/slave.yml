@@ -1,0 +1,17 @@
+---
+- name: create common configuration on slave
+  template:
+    src: etc/default/mesos.j2
+    dest: /etc/default/mesos
+  notify: 
+    - restart mesos-slave
+  tags:
+    - mesos
+
+- name: create slave configuration
+  template:
+    src: etc/default/mesos-slave.j2
+    dest: /etc/default/mesos-slave
+  notify: restart mesos-slave
+  tags:
+    - mesos

@@ -1,3 +1,33 @@
 ---
+- name: install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - mesos
+  tags:
+    - mesos
 
-- include: install.yml
+- name: remove default configuration
+  file:
+    path: "/etc/mesos-{{ item }}"
+    state: absent
+  with_items:
+    - master
+    - slave
+  tags:
+    - mesos
+
+- name: create zk configuration
+  template:
+    src: etc/mesos/zk.j2
+    dest: /etc/mesos/zk
+  tags:
+    - mesos
+
+- include: master.yml
+  when: mesos_mode == 'master' or mesos_mode == 'both'
+
+- include: slave.yml
+  when: mesos_mode == 'slave' or mesos_mode == 'both'

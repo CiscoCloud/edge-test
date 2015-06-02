@@ -1,5 +1,4 @@
 # {{ ansible_managed }}
 
-MASTER=zk://{% for host in groups['exhibitor'] %}{{ hostvars[host].ansible_eth0.ipv4.address }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos-{{ name_tag }}
-
-ISOLATION="{{ isolation }}"
+MASTER=`cat /etc/mesos/zk`
+ISOLATION="{{ mesos_isolation }}"
