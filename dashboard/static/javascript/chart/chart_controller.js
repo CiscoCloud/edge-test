@@ -40,7 +40,14 @@
     };
 
     $scope.addChart = function(eventName, field) {
-      $scope.charts[eventName + field] = {events: {}, allEvents: [], field: field, eventName: eventName};
+      $scope.charts[eventName + field] = {
+        events: {},
+        allEvents: [],
+        field: field,
+        eventName: eventName,
+        sumLat: 0,
+        sumCount: 0, count: 0
+      };
     };
 
     $scope.addEvent = function(event) {
@@ -55,9 +62,19 @@
           events[event.operation] = [];
         }
         events[event.operation].push(event);
+        events[event.operation].sort(function(a, b){
+          return a.second - b.second;
+        });
         $scope.charts[chartId].allEvents.push(event);
         $scope.charts[chartId].events = events;
         $scope.charts[chartId].rendered = false;
+        if (event.operation == "avg10second") {
+          $scope.charts[chartId].sumLat += event.value;
+          $scope.charts[chartId].sumCount += event.count;
+          $scope.charts[chartId].count = $scope.charts[chartId].count + 1;
+          $scope.charts[chartId].avgLat = ($scope.charts[chartId].sumLat / $scope.charts[chartId].count).toFixed(2);
+          $scope.charts[chartId].avgCount = ($scope.charts[chartId].sumCount / $scope.charts[chartId].count).toFixed(2);
+        }
       }
     };
 
@@ -107,7 +124,8 @@
         chart.xAxis = d3.svg.axis()
             .scale(chart.x)
             .orient("bottom")
-            .tickFormat(function(d){return d3.time.format('%X')(new Date(d));});
+            .tickFormat(function(d){return d3.time.format('%X')(new Date(d));})
+            .ticks(9);
 
         chart.yAxis = d3.svg.axis()
             .scale(chart.y)
