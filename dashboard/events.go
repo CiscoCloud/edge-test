@@ -108,7 +108,7 @@ func (this *EventFetcher) EventHistory() []Event {
 
 func (this *EventFetcher) startFetch() {
 	topicCount := make(map[string]int)
-	topicCount[fmt.Sprintf("mirror_%s-latencies", this.config.Topic)] = 1
+	topicCount[fmt.Sprintf("%s-latencies", this.config.Topic)] = 1
 	this.consumer.StartStatic(topicCount)
 }
 
