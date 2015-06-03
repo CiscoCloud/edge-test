@@ -53,7 +53,7 @@ type TransformExecutor struct {
 func NewTransformExecutor(config *TransformExecutorConfig) *TransformExecutor {
 	return &TransformExecutor{
 		config:   config,
-		incoming: make(chan *avro.LogLine),
+		incoming: make(chan *avro.LogLine, 10000),
 		close:    make(chan bool),
 	}
 }
@@ -167,6 +167,7 @@ func (this *TransformExecutor) startProducer() {
 
 	producerConfig.KeyEncoder = kafka.NewKafkaAvroEncoder(cfgMap["schema.registry.url"])
 	producerConfig.ValueEncoder = producerConfig.KeyEncoder
+	producerConfig.SendBufferSize = 10000
 
 	this.producer = kafka.NewSaramaProducer(producerConfig)
 	go this.produceRoutine()
@@ -180,13 +181,14 @@ func (this *TransformExecutor) produceRoutine() {
 }
 
 func (this *TransformExecutor) handleFunc() func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if this.config.Sync {
+	if this.config.Sync {
+		return func(w http.ResponseWriter, r *http.Request) {
 			this.handle(r)
-		} else {
+		}
+	} else {
+		return func(w http.ResponseWriter, r *http.Request) {
 			go this.handle(r)
 		}
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -278,6 +280,6 @@ func (this *TransformExecutor) timing(name string) *avro.Timing {
 	timing := avro.NewTiming()
 	timing.EventName = name
 	timing.Value = time.Now().UnixNano()
-    //TODO ntpstatus
+	//TODO ntpstatus
 	return timing
 }
