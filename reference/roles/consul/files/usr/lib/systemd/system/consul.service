@@ -5,10 +5,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=consul
-Group=consul
-EnvironmentFile=-/etc/sysconfig/consul
-ExecStart=/usr/bin/consul $CMD_OPTS
+User=root
+Group=root
+ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul -data-dir=/var/lib/consul
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGINT
 

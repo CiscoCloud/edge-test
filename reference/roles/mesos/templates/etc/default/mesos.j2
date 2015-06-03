@@ -1,7 +1,7 @@
 # {{ ansible_managed }}
 
 # options supported by mesos-init-wrapper
-IP={{ ansible_eth0.ipv4.address }}
+IP={{ ansible_default_ipv4.address }}
 CLUSTER="{{ cluster }}"
 LOGS="{{ log_dir }}"
 ULIMIT="{{ ulimit }}"

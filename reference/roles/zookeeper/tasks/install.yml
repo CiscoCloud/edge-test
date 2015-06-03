@@ -24,17 +24,6 @@
   tags:
     - zookeeper
 
-- name: create upstart script
-  template: 
-    src: etc/init/zookeeper.conf.j2
-    dest: /etc/init/zookeeper.conf
-    owner: root
-    group: root
-    mode: 0644
-  notify: restart zookeeper
-  tags:
-    - zookeeper
-
 - name: create configuration files
   template:
     src: opt/zookeeper/conf/{{ item }}.j2

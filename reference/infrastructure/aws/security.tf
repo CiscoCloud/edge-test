@@ -5,29 +5,25 @@ resource "aws_security_group" "clusterwide" {
   description = "${var.cluster_name} security group"
   vpc_id = "${aws_vpc.vpc.id}"
 
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    self = true
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    self = true
+  }
+
   tags {
       Name = "${var.cluster_name}"
   }
 
   depends_on = ["aws_vpc.vpc"]
-}
-
-resource "aws_security_group_rule" "ingress_inter_node" {
-  security_group_id = "${aws_security_group.clusterwide.id}"
-  type = "ingress"
-  from_port = 0
-  to_port = 0
-  protocol = "-1"
-  self = true
-}
-
-resource "aws_security_group_rule" "egress_inter_node" {
-  security_group_id = "${aws_security_group.clusterwide.id}"
-  type = "egress"
-  from_port = 0
-  to_port = 0
-  protocol = "-1"
-  self = true
 }
 
 resource "aws_security_group_rule" "ingress_global_tcp" {

@@ -1,1 +1,1 @@
-zk://{% for host in groups['exhibitor'] | intersect(groups[cluster]) %}{{ hostvars[host].ansible_eth0.ipv4.address }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos-{{ cluster }}
+zk://{% for host in groups['exhibitor'] | intersect(groups[cluster]) %}{{ hostvars[host].ansible_default_ipv4.address }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos-{{ cluster }}

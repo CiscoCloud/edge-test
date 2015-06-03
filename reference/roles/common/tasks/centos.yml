@@ -1,0 +1,16 @@
+---
+
+- name: add mesosphere repo
+  sudo: yes
+  yum:
+    name:  http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
+    state: present
+
+- name: install common packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ common_packages }}"
+    - "{{ common_rpm_packages }}"
+

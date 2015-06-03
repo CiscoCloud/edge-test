@@ -1,0 +1,11 @@
+# Defines vagrant deployment design
+
+- hosts: all
+  sudo: True
+  roles:
+    - common
+    - consul
+    - zookeeper
+    - mesos
+  vars:
+     cluster: 'vagrant'

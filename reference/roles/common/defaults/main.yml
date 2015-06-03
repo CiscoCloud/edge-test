@@ -1,0 +1,10 @@
+common_packages:
+  - unzip
+  - git
+  - mercurial
+
+common_deb_packages:
+  - oracle-java7-installer
+
+common_rpm_packages:
+  - java-1.7.0-openjdk
