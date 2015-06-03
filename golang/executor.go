@@ -18,67 +18,61 @@ limitations under the License. */
 package main
 
 import (
-    "github.com/mesos/mesos-go/executor"
-    "fmt"
-    "flag"
-    "github.com/CiscoCloud/edge-test/golang/transform"
-    "os"
-    "strings"
+	"flag"
+	"fmt"
+	"github.com/CiscoCloud/edge-test/golang/transform"
+	"github.com/mesos/mesos-go/executor"
+	"os"
 )
 
 var port = flag.Int("port", 0, "Port to bind to")
-var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
-var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var producerConfig = flag.String("producer.config", "", "Producer config file name.")
 var topic = flag.String("topic", "", "Topic to produce transformed data to.")
+var sync = flag.Bool("sync", false, "Flag to respond only after decoding-encoding is done.")
 
 func parseAndValidateExecutorArgs() {
-    flag.Parse()
+	flag.Parse()
 
-    if *schemaRegistryUrl == "" {
-        fmt.Println("schema.registry flag is required.")
-        os.Exit(1)
-    }
+	if *producerConfig == "" {
+		fmt.Println("schema.registry flag is required.")
+		os.Exit(1)
+	}
 
-    if *brokerList == "" {
-        fmt.Println("broker.list flag is required.")
-        os.Exit(1)
-    }
+	if *topic == "" {
+		fmt.Println("topic flag is required.")
+		os.Exit(1)
+	}
 
-    if *topic == "" {
-        fmt.Println("topic flag is required.")
-        os.Exit(1)
-    }
-
-    if *port == 0 {
-        fmt.Println("port flag is required.")
-        os.Exit(1)
-    }
+	if *port == 0 {
+		fmt.Println("port flag is required.")
+		os.Exit(1)
+	}
 }
 
 func main() {
-    parseAndValidateExecutorArgs()
-    fmt.Println("Starting Transform Executor")
+	parseAndValidateExecutorArgs()
+	fmt.Println("Starting Transform Executor")
 
-    executorConfig := transform.NewTransformExecutorConfig()
-    executorConfig.SchemaRegistryUrl = *schemaRegistryUrl
-    executorConfig.BrokerList = strings.Split(*brokerList, ",")
-    executorConfig.Topic = *topic
-    executorConfig.Port = *port
+	executorConfig := transform.NewTransformExecutorConfig()
+	executorConfig.ProducerConfig = *producerConfig
+	executorConfig.Topic = *topic
+	executorConfig.Port = *port
+	executorConfig.Sync = *sync
 
-    driverConfig := executor.DriverConfig {
-        Executor: transform.NewTransformExecutor(executorConfig),
-    }
-    driver, err := executor.NewMesosExecutorDriver(driverConfig)
+	driverConfig := executor.DriverConfig{
+		Executor: transform.NewTransformExecutor(executorConfig),
+	}
+	driver, err := executor.NewMesosExecutorDriver(driverConfig)
 
-    if err != nil {
-        fmt.Println("Unable to create a ExecutorDriver ", err.Error())
-    }
+	if err != nil {
+		fmt.Println("Unable to create a ExecutorDriver ", err.Error())
+	}
 
-    _, err = driver.Start()
-    if err != nil {
-        fmt.Println("Got error:", err)
-        return
-    }
-    fmt.Println("Executor process has started and running.")
-    driver.Join()
+	_, err = driver.Start()
+	if err != nil {
+		fmt.Println("Got error:", err)
+		return
+	}
+	fmt.Println("Executor process has started and running.")
+	driver.Join()
 }

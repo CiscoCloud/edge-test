@@ -44,6 +44,10 @@ trait ExecutorBase extends Executor {
       opt[String]('t', "topic").required().text("Topic to produce transformed data to.").action { (value, config) =>
         config.copy(topic = value)
       }
+
+      opt[Boolean]('s', "sync").required().text("Flag to respond only after decoding-encoding is done.").action { (value, config) =>
+        config.copy(sync = value)
+      }
     }
 
     parser.parse(args, ExecutorConfigBase()) match {
@@ -124,4 +128,4 @@ trait ExecutorBase extends Executor {
   }
 }
 
-case class ExecutorConfigBase(port: Int = 0, producerConfig: String = "", topic: String = "")
+case class ExecutorConfigBase(port: Int = 0, producerConfig: String = "", topic: String = "", sync: Boolean = false)

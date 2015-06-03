@@ -21,6 +21,7 @@ import (
 	"github.com/CiscoCloud/edge-test/golang/avro"
 	pb "github.com/CiscoCloud/edge-test/golang/proto"
 	"github.com/golang/protobuf/proto"
+	"github.com/jimlawless/cfg"
 	"github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	kafka "github.com/stealthly/go_kafka_client"
@@ -30,10 +31,10 @@ import (
 )
 
 type TransformExecutorConfig struct {
-	BrokerList        []string
-	SchemaRegistryUrl string
-	Topic             string
-	Port              int
+	ProducerConfig string
+	Topic          string
+	Port           int
+	Sync           bool
 }
 
 func NewTransformExecutorConfig() *TransformExecutorConfig {
@@ -41,10 +42,11 @@ func NewTransformExecutorConfig() *TransformExecutorConfig {
 }
 
 type TransformExecutor struct {
-	config   *TransformExecutorConfig
-	incoming chan *avro.LogLine
-	producer kafka.Producer
-	close    chan bool
+	config      *TransformExecutorConfig
+	incoming    chan *avro.LogLine
+	avroDecoder *kafka.KafkaAvroDecoder
+	producer    kafka.Producer
+	close       chan bool
 }
 
 // Creates a new TransformExecutor with a given config.
@@ -90,6 +92,7 @@ func (this *TransformExecutor) LaunchTask(driver executor.ExecutorDriver, taskIn
 	}
 
 	go func() {
+		//        this.avroDecoder = kafka.NewKafkaAvroDecoder(this.config.SchemaRegistryUrl)
 		this.startHTTPServer()
 		this.startProducer()
 		<-this.close
@@ -149,11 +152,21 @@ func (this *TransformExecutor) startHTTPServer() {
 }
 
 func (this *TransformExecutor) startProducer() {
-	producerConfig := kafka.DefaultProducerConfig()
+	producerConfig, err := kafka.ProducerConfigFromFile(this.config.ProducerConfig)
+	if err != nil {
+		panic(err)
+	}
 
-	producerConfig.KeyEncoder = kafka.NewKafkaAvroEncoder(this.config.SchemaRegistryUrl)
+	cfgMap := make(map[string]string)
+	err = cfg.Load(this.config.ProducerConfig, cfgMap)
+	if err != nil {
+		panic(err)
+	}
+
+	this.avroDecoder = kafka.NewKafkaAvroDecoder(cfgMap["schema.registry.url"])
+
+	producerConfig.KeyEncoder = kafka.NewKafkaAvroEncoder(cfgMap["schema.registry.url"])
 	producerConfig.ValueEncoder = producerConfig.KeyEncoder
-	producerConfig.BrokerList = this.config.BrokerList
 
 	this.producer = kafka.NewSaramaProducer(producerConfig)
 	go this.produceRoutine()
@@ -167,44 +180,50 @@ func (this *TransformExecutor) produceRoutine() {
 }
 
 func (this *TransformExecutor) handleFunc() func(http.ResponseWriter, *http.Request) {
-	avroDecoder := kafka.NewKafkaAvroDecoder(this.config.SchemaRegistryUrl)
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		timing := this.timing("received")
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
+		if this.config.Sync {
+			this.handle(r)
+		} else {
+			go this.handle(r)
 		}
-
-		logLine := avro.NewLogLine()
-		logLine.Size = int64(len(body))
-		contentType := r.Header.Get("Content-Type")
-		switch contentType {
-		case "application/json":
-			{
-				err = this.handleJson(body, logLine)
-			}
-		case "application/x-protobuf":
-			{
-				err = this.handleProto(body, logLine)
-			}
-		case "avro/binary":
-			{
-				err = this.handleAvro(body, logLine, avroDecoder)
-			}
-		default:
-			err = fmt.Errorf("Content-Type %s is invalid", contentType)
-		}
-
-		if err != nil {
-			fmt.Printf("Got corrupted log line: %s\n", err)
-			return
-		}
-
-		logLine.Timings = append(logLine.Timings, timing)
-
-		this.incoming <- logLine
+		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func (this *TransformExecutor) handle(r *http.Request) {
+	timing := this.timing("received")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	logLine := avro.NewLogLine()
+	logLine.Size = int64(len(body))
+	contentType := r.Header.Get("Content-Type")
+	switch contentType {
+	case "application/json":
+		{
+			err = this.handleJson(body, logLine)
+		}
+	case "application/x-protobuf":
+		{
+			err = this.handleProto(body, logLine)
+		}
+	case "avro/binary":
+		{
+			err = this.handleAvro(body, logLine)
+		}
+	default:
+		err = fmt.Errorf("Content-Type %s is invalid", contentType)
+	}
+
+	if err != nil {
+		fmt.Printf("Got corrupted log line: %s\n", err)
+		return
+	}
+
+	logLine.Timings = append(logLine.Timings, timing)
+	this.incoming <- logLine
 }
 
 func (this *TransformExecutor) handleJson(body []byte, logLine *avro.LogLine) error {
@@ -220,8 +239,8 @@ func (this *TransformExecutor) handleJson(body []byte, logLine *avro.LogLine) er
 	return nil
 }
 
-func (this *TransformExecutor) handleAvro(body []byte, logLine *avro.LogLine, decoder *kafka.KafkaAvroDecoder) error {
-	return decoder.DecodeSpecific(body, logLine)
+func (this *TransformExecutor) handleAvro(body []byte, logLine *avro.LogLine) error {
+	return this.avroDecoder.DecodeSpecific(body, logLine)
 }
 
 func (this *TransformExecutor) handleProto(body []byte, logLine *avro.LogLine) error {

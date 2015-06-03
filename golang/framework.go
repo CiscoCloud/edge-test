@@ -18,16 +18,17 @@ limitations under the License. */
 package main
 
 import (
-    "github.com/mesos/mesos-go/mesosproto"
-    "github.com/mesos/mesos-go/scheduler"
-    "github.com/golang/protobuf/proto"
-    "net/http"
-    "flag"
-    "fmt"
-    "os"
-    "strings"
-    "os/signal"
-    "github.com/CiscoCloud/edge-test/golang/transform"
+	"flag"
+	"fmt"
+	"github.com/CiscoCloud/edge-test/golang/transform"
+	"github.com/golang/protobuf/proto"
+	"github.com/mesos/mesos-go/mesosproto"
+	"github.com/mesos/mesos-go/scheduler"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
 )
 
 var instances = flag.Int("instances", 1, "Number of tasks to run.")
@@ -38,82 +39,86 @@ var executorArchiveName = flag.String("executor.archive", "executor.zip", "Execu
 var executorBinaryName = flag.String("executor.name", "executor", "Executor binary name contained in archive.")
 var cpuPerTask = flag.Float64("cpu.per.task", 0.2, "CPUs per task.")
 var memPerTask = flag.Float64("mem.per.task", 256, "Memory per task.")
-var schemaRegistryUrl = flag.String("schema.registry", "", "Avro Schema Registry url.")
-var brokerList = flag.String("broker.list", "", "Comma separated list of brokers for producer.")
+var producerConfig = flag.String("producer.config", "", "Producer config file name.")
 var topic = flag.String("topic", "", "Topic to produce transformed data to.")
+var sync = flag.Bool("sync", false, "Flag to respond only after decoding-encoding is done.")
 
 func parseAndValidateSchedulerArgs() {
-    flag.Parse()
+	flag.Parse()
 
-    if *schemaRegistryUrl == "" {
-        fmt.Println("schema.registry flag is required.")
-        os.Exit(1)
-    }
+	if *producerConfig == "" {
+		fmt.Println("producer.config flag is required.")
+		os.Exit(1)
+	}
 
-    if *brokerList == "" {
-        fmt.Println("broker.list flag is required.")
-        os.Exit(1)
-    }
-
-    if *topic == "" {
-        fmt.Println("topic flag is required.")
-        os.Exit(1)
-    }
+	if *topic == "" {
+		fmt.Println("topic flag is required.")
+		os.Exit(1)
+	}
 }
 
-func startArtifactServer() {
-    //if the full path is given, take the last token only
-    path := strings.Split(*executorArchiveName, "/")
-    http.HandleFunc(fmt.Sprintf("/%s", path[len(path)-1]), func(w http.ResponseWriter, r *http.Request) {
-        http.ServeFile(w, r, *executorArchiveName)
-    })
-    http.ListenAndServe(fmt.Sprintf("%s:%d", *artifactServerHost, *artifactServerPort), nil)
+func startArtifactServer(config *transform.TransformSchedulerConfig) {
+	http.HandleFunc("/scale/", func(w http.ResponseWriter, r *http.Request) {
+		scaleTokens := strings.Split(r.URL.Path, "/")
+		scale, err := strconv.Atoi(scaleTokens[len(scaleTokens)-1])
+		if err != nil {
+			panic(err)
+		}
+		config.Instances = scale
+	})
+	http.HandleFunc(fmt.Sprintf("/resource/"), func(w http.ResponseWriter, r *http.Request) {
+		resourceTokens := strings.Split(r.URL.Path, "/")
+		resource := resourceTokens[len(resourceTokens)-1]
+		fmt.Println("Serving ", resource)
+		http.ServeFile(w, r, resource)
+	})
+	http.ListenAndServe(fmt.Sprintf("%s:%d", *artifactServerHost, *artifactServerPort), nil)
 }
 
 func main() {
-    parseAndValidateSchedulerArgs()
+	parseAndValidateSchedulerArgs()
 
-    ctrlc := make(chan os.Signal, 1)
-    signal.Notify(ctrlc, os.Interrupt)
+	ctrlc := make(chan os.Signal, 1)
+	signal.Notify(ctrlc, os.Interrupt)
 
-    go startArtifactServer()
+	frameworkInfo := &mesosproto.FrameworkInfo{
+		User: proto.String(""),
+		Name: proto.String("Go LogLine Transform Framework"),
+	}
 
-    frameworkInfo := &mesosproto.FrameworkInfo{
-        User: proto.String(""),
-        Name: proto.String("Go LogLine Transform Framework"),
-    }
+	schedulerConfig := transform.NewTransformSchedulerConfig()
+	schedulerConfig.ArtifactServerHost = *artifactServerHost
+	schedulerConfig.ArtifactServerPort = *artifactServerPort
+	schedulerConfig.ExecutorArchiveName = *executorArchiveName
+	schedulerConfig.ExecutorBinaryName = *executorBinaryName
+	schedulerConfig.Instances = *instances
+	schedulerConfig.CpuPerTask = *cpuPerTask
+	schedulerConfig.MemPerTask = *memPerTask
+	schedulerConfig.ProducerConfig = *producerConfig
+	schedulerConfig.Topic = *topic
+	schedulerConfig.Sync = *sync
 
-    schedulerConfig := transform.NewTransformSchedulerConfig()
-    schedulerConfig.ArtifactServerHost = *artifactServerHost
-    schedulerConfig.ArtifactServerPort = *artifactServerPort
-    schedulerConfig.ExecutorArchiveName = *executorArchiveName
-    schedulerConfig.ExecutorBinaryName = *executorBinaryName
-    schedulerConfig.Instances = *instances
-    schedulerConfig.CpuPerTask = *cpuPerTask
-    schedulerConfig.MemPerTask = *memPerTask
-    schedulerConfig.SchemaRegistryUrl = *schemaRegistryUrl
-    schedulerConfig.BrokerList = *brokerList
-    schedulerConfig.Topic = *topic
+	go startArtifactServer(schedulerConfig)
 
-    transformScheduler := transform.NewTransformScheduler(schedulerConfig)
-    driverConfig := scheduler.DriverConfig{
-        Scheduler: transformScheduler,
-        Framework: frameworkInfo,
-        Master: *master,
-    }
+	transformScheduler := transform.NewTransformScheduler(schedulerConfig)
+	driverConfig := scheduler.DriverConfig{
+		Scheduler: transformScheduler,
+		Framework: frameworkInfo,
+		Master:    *master,
+	}
 
-    driver, err := scheduler.NewMesosSchedulerDriver(driverConfig)
-    go func() {
-        <-ctrlc
-        transformScheduler.Shutdown(driver)
-        driver.Stop(false)
-    }()
+	driver, err := scheduler.NewMesosSchedulerDriver(driverConfig)
+	go func() {
+		<-ctrlc
+		transformScheduler.Shutdown(driver)
+		driver.Stop(false)
+	}()
 
-    if err != nil {
-        fmt.Println("Unable to create a SchedulerDriver ", err.Error())
-    }
+	if err != nil {
+		fmt.Println("Unable to create a SchedulerDriver ", err.Error())
+	}
 
-    if stat, err := driver.Run(); err != nil {
-        fmt.Println("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
-    }
+	if stat, err := driver.Run(); err != nil {
+		fmt.Println("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
+	}
 }

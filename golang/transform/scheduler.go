@@ -50,14 +50,14 @@ type TransformSchedulerConfig struct {
 	// Number of task instances to run.
 	Instances int
 
-	// Avro Schema Registry url.
-	SchemaRegistryUrl string
-
-	// Comma separated list of brokers for producer.
-	BrokerList string
+	// Producer config file name.
+	ProducerConfig string
 
 	// Topic to produce transformed data to.
 	Topic string
+
+	// Flag to respond only after decoding-encoding is done.
+	Sync bool
 }
 
 func NewTransformSchedulerConfig() *TransformSchedulerConfig {
@@ -71,6 +71,7 @@ func NewTransformSchedulerConfig() *TransformSchedulerConfig {
 type TransformScheduler struct {
 	config           *TransformSchedulerConfig
 	runningInstances int32
+	tasks            []*mesos.TaskID
 }
 
 func NewTransformScheduler(config *TransformSchedulerConfig) *TransformScheduler {
@@ -102,6 +103,15 @@ func (this *TransformScheduler) Disconnected(scheduler.SchedulerDriver) {
 func (this *TransformScheduler) ResourceOffers(driver scheduler.SchedulerDriver, offers []*mesos.Offer) {
 	fmt.Println("Received offers")
 
+	if int(this.runningInstances) > this.config.Instances {
+		toKill := int(this.runningInstances) - this.config.Instances
+		for i := 0; i < toKill; i++ {
+			driver.KillTask(this.tasks[i])
+		}
+
+		this.tasks = this.tasks[toKill:]
+	}
+
 	offersAndTasks := make(map[*mesos.Offer][]*mesos.TaskInfo)
 	for _, offer := range offers {
 		cpus := getScalarResources(offer, "cpus")
@@ -112,14 +122,12 @@ func (this *TransformScheduler) ResourceOffers(driver scheduler.SchedulerDriver,
 		remainingMems := mems
 
 		var tasks []*mesos.TaskInfo
-		for int(this.getRunningInstances()) < this.config.Instances && this.config.CpuPerTask <= remainingCpus && this.config.MemPerTask <= remainingMems &&
-			len(ports) > 0 {
-			taskId := &mesos.TaskID{
-				Value: proto.String(fmt.Sprintf("transform-%d", this.getRunningInstances())),
-			}
-
+		for int(this.getRunningInstances()) < this.config.Instances && this.config.CpuPerTask <= remainingCpus && this.config.MemPerTask <= remainingMems && len(ports) > 0 {
 			port := this.takePort(&ports)
 			taskPort := &mesos.Value_Range{Begin: port, End: port}
+			taskId := &mesos.TaskID{
+				Value: proto.String(fmt.Sprintf("golang-%s-%d", *offer.Hostname, *port)),
+			}
 
 			task := &mesos.TaskInfo{
 				Name:     proto.String(taskId.GetValue()),
@@ -139,6 +147,7 @@ func (this *TransformScheduler) ResourceOffers(driver scheduler.SchedulerDriver,
 			remainingMems -= this.config.MemPerTask
 			ports = ports[1:]
 
+			this.tasks = append(this.tasks, taskId)
 			this.incRunningInstances()
 		}
 		fmt.Printf("Launching %d tasks for offer %s\n", len(tasks), offer.Id.GetValue())
@@ -162,6 +171,7 @@ func (this *TransformScheduler) StatusUpdate(driver scheduler.SchedulerDriver, s
 	fmt.Printf("Status update: task %s is in state %s\n", status.TaskId.GetValue(), status.State.Enum().String())
 
 	if status.GetState() == mesos.TaskState_TASK_LOST || status.GetState() == mesos.TaskState_TASK_FAILED || status.GetState() == mesos.TaskState_TASK_FINISHED {
+		this.removeTask(status.GetTaskId())
 		this.decRunningInstances()
 	}
 }
@@ -194,10 +204,7 @@ func (this *TransformScheduler) Error(driver scheduler.SchedulerDriver, err stri
 func (this *TransformScheduler) Shutdown(driver scheduler.SchedulerDriver) {
 	fmt.Println("Shutting down scheduler.")
 
-	for taskNumber := 0; taskNumber < int(this.getRunningInstances()); taskNumber++ {
-		taskId := &mesos.TaskID{
-			Value: proto.String(fmt.Sprintf("transform-%d", taskNumber)),
-		}
+	for _, taskId := range this.tasks {
 		if err := this.tryKillTask(driver, taskId); err != nil {
 			fmt.Printf("Failed to kill task %s\n", taskId.GetValue())
 		}
@@ -237,11 +244,13 @@ func (this *TransformScheduler) createExecutor(instanceId int32, port uint64) *m
 		Name:       proto.String("LogLine Transform Executor"),
 		Source:     proto.String("cisco"),
 		Command: &mesos.CommandInfo{
-			Value: proto.String(fmt.Sprintf("./%s --schema.registry %s --broker.list %s --topic %s --port %d",
-				this.config.ExecutorBinaryName, this.config.SchemaRegistryUrl, this.config.BrokerList, this.config.Topic, port)),
+			Value: proto.String(fmt.Sprintf("./%s --producer.config %s --topic %s --port %d --sync %t",
+				this.config.ExecutorBinaryName, this.config.ProducerConfig, this.config.Topic, port, this.config.Sync)),
 			Uris: []*mesos.CommandInfo_URI{&mesos.CommandInfo_URI{
-				Value:   proto.String(fmt.Sprintf("http://%s:%d/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, path[len(path)-1])),
+				Value:   proto.String(fmt.Sprintf("http://%s:%d/resource/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, path[len(path)-1])),
 				Extract: proto.Bool(true),
+			}, &mesos.CommandInfo_URI{
+				Value: proto.String(fmt.Sprintf("http://%s:%d/resource/%s", this.config.ArtifactServerHost, this.config.ArtifactServerPort, this.config.ProducerConfig)),
 			}},
 		},
 	}
@@ -257,6 +266,14 @@ func (this *TransformScheduler) tryKillTask(driver scheduler.SchedulerDriver, ta
 		}
 	}
 	return err
+}
+
+func (this *TransformScheduler) removeTask(id *mesos.TaskID) {
+	for i, task := range this.tasks {
+		if *task.Value == *id.Value {
+			this.tasks = append(this.tasks[:i], this.tasks[i+1:]...)
+		}
+	}
 }
 
 func getScalarResources(offer *mesos.Offer, resourceName string) float64 {

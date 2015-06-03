@@ -18,8 +18,6 @@
 
 package ly.stealth.mesos.logging
 
-import java.util.UUID
-
 import org.apache.mesos.Protos
 import org.apache.mesos.Protos._
 
@@ -61,7 +59,7 @@ object Scheduler extends SchedulerBase {
     }
 
     if (cpus > schedulerConfig.base.cpuPerTask && mems > schedulerConfig.base.memPerTask && portOpt.nonEmpty && adminPortOpt.nonEmpty) {
-      val id = "transform-" + UUID.randomUUID().toString
+      val id = s"dropwizard-${offer.getHostname}-${portOpt.get}"
       val taskId = TaskID.newBuilder().setValue(id).build()
       val taskInfo = TaskInfo.newBuilder().setName(taskId.getValue).setTaskId(taskId).setSlaveId(offer.getSlaveId)
         .setExecutor(this.createExecutor(id, portOpt.get, adminPortOpt.get))
@@ -80,7 +78,7 @@ object Scheduler extends SchedulerBase {
     val executorConfigPath = this.schedulerConfig.executorDropwizardConfig.split("/").last
     val producerConfigPath = this.schedulerConfig.base.producerConfig.split("/").last
     val cmd = s"java -Ddw.server.applicationConnectors[0].port=$port -Ddw.server.adminConnectors[0].port=$adminPort -cp ${this.schedulerConfig.base.executor} ly.stealth.mesos.logging.Executor " +
-      s"--producer.config ${this.schedulerConfig.base.producerConfig} --topic ${this.schedulerConfig.base.topic}"
+      s"--producer.config ${this.schedulerConfig.base.producerConfig} --topic ${this.schedulerConfig.base.topic} --sync ${this.schedulerConfig.base.sync}"
     ExecutorInfo.newBuilder().setExecutorId(ExecutorID.newBuilder().setValue(id))
       .setCommand(CommandInfo.newBuilder()
       .addUris(CommandInfo.URI.newBuilder.setValue(s"http://${this.schedulerConfig.base.artifactServerHost}:${this.schedulerConfig.base.artifactServerPort}/resource/$path"))
