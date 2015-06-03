@@ -94,9 +94,9 @@
     $scope.drawChart = function(chartId) {
       var chart = $scope.charts[chartId];
       if (!chart.init) {
-        chart.margin = {top: 20, right: 20, bottom: 30, left: 50};
-        chart.width = 1100 - chart.margin.left - chart.margin.right;
-        chart.height = 500 - chart.margin.top - chart.margin.bottom;
+        chart.margin = {top: 20, right: 20, bottom: 30, left: 80};
+        chart.width = 550 - chart.margin.left - chart.margin.right;
+        chart.height = 250 - chart.margin.top - chart.margin.bottom;
 
         chart.x = d3.scale.linear()
             .range([0, chart.width]);
