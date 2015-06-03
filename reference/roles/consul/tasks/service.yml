@@ -4,8 +4,6 @@
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   with_items:
-    - src: etc/sysconfig/consul
-      dest: /etc/sysconfig/consul
     - src: usr/lib/systemd/system/consul.service
       dest: /usr/lib/systemd/system/consul.service
   when: ansible_distribution == 'CentOS'
@@ -17,7 +15,7 @@
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   with_items:
-    - src: etc/sysconfig/consul
+    - src: etc/default/consul
       dest: /etc/default/consul
     - src: etc/init/consul.conf
       dest: /etc/init/consul.conf

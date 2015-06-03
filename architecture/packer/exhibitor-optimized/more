@@ -1,0 +1,124 @@
+Last login: Tue May 26 15:47:03 2015 from ip70-176-211-9.ph.ph.cox.net
+ubuntu@ip-172-31-4-218:~$ history
+    1  ls
+    2  sudo chmod +x mirrormaker 
+    3  exit
+    4  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081
+    5  vim consumer.config 
+    6  vim producer.config 
+    7  vim consumer.config 
+    8  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081
+    9  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   10  vim producer.config 
+   11  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   12  tail -n 1000 out 
+   13  tail -n 1000 err 
+   14  tail -n 1000 out 
+   15  ls
+   16  htop
+   17  sudo apt-get install mirrormaker
+   18  sudo apt-get install htop
+   19  hto
+   20  htop
+   21  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   22  exit
+   23  ls
+   24  exit
+   25  cat out 
+   26  cat err 
+   27  vim err 
+   28  exit
+   29  df -h
+   30  ls
+   31  rm err 
+   32  rm out 
+   33  ./mirrormaker --consumer.config consumer.config --num.streams 2 --producer.config producer.config --whitelist="^logs$" --prefix mirror_ --preserve.order --transform --schema.registry.url http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   34  tail -f out 
+   35  exit
+   36  cat err 
+   37  vim err 
+   38  exit
+   39  history
+ubuntu@ip-172-31-4-218:~$ cat producer.config 
+metadata.broker.list=52.8.146.111:9092,52.8.156.208:9092,52.8.135.17:9092,52.8.160.244:9092,52.8.160.253:9092,52.8.161.74:9092
+ubuntu@ip-172-31-4-218:~$ 
+Broadcast message from root@ip-172-31-4-218
+  (unknown) at 22:33 ...
+
+The system is going down for power off NOW!
+Connection to ec2-52-8-161-106.us-west-1.compute.amazonaws.com closed by remote host.
+Connection to ec2-52-8-161-106.us-west-1.compute.amazonaws.com closed.
+josephs-mbp:reference joestein$ ssh -i reference.pem ubuntu@ec2-52-8-159-8.us-west-1.compute.amazonaws.com
+The authenticity of host 'ec2-52-8-159-8.us-west-1.compute.amazonaws.com (52.8.159.8)' can't be established.
+RSA key fingerprint is 17:38:ce:7e:69:0e:73:bd:e0:78:91:12:c0:6d:13:65.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'ec2-52-8-159-8.us-west-1.compute.amazonaws.com,52.8.159.8' (RSA) to the list of known hosts.
+Welcome to Ubuntu 14.04.2 LTS (GNU/Linux 3.13.0-48-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+
+  System information as of Tue May 26 15:47:01 UTC 2015
+
+  System load:  0.0                Processes:           145
+  Usage of /:   1.1% of 196.73GB   Users logged in:     0
+  Memory usage: 3%                 IP address for eth0: 172.31.4.220
+  Swap usage:   0%
+
+  Graph this data and manage this system at:
+    https://landscape.canonical.com/
+
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+50 packages can be updated.
+26 updates are security updates.
+
+
+Last login: Tue May 26 15:47:03 2015 from ip70-176-211-9.ph.ph.cox.net
+ubuntu@ip-172-31-4-220:~$ exit
+logout
+Connection to ec2-52-8-159-8.us-west-1.compute.amazonaws.com closed.
+josephs-mbp:reference joestein$ ssh -i reference.pem ubuntu@ec2-52-8-159-8.us-west-1.compute.amazonaws.com
+Welcome to Ubuntu 14.04.2 LTS (GNU/Linux 3.13.0-48-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+
+  System information as of Tue May 26 22:33:38 UTC 2015
+
+  System load:  0.02               Processes:           146
+  Usage of /:   1.1% of 196.73GB   Users logged in:     0
+  Memory usage: 3%                 IP address for eth0: 172.31.4.220
+  Swap usage:   0%
+
+  Graph this data and manage this system at:
+    https://landscape.canonical.com/
+
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+50 packages can be updated.
+26 updates are security updates.
+
+
+Last login: Tue May 26 22:33:39 2015 from ool-2f1156d3.dyn.optonline.net
+ubuntu@ip-172-31-4-220:~$ history
+    1  sudo chown +x perf 
+    2  sudo chmod +x perf 
+    3  ./perf logs -1 200 1000 52.8.146.111:9092 http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+    4  jps
+    5  ls -l
+    6  top
+    7  htop
+    8  sudo apt-get install htop
+    9  htop
+   10  ./perf logs -1 200 1000 52.8.146.111:9092 http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   11  cat err 
+   12  cat out 
+   13  pkill perf
+   14  ./perf logs -1 200 1000 52.8.146.111:9092 http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   15  exit
+   16  ./perf logs -1 200 1000 52.8.146.111:9092 http://ip-172-31-4-204.us-west-1.compute.internal:8081 1> out 2> err &
+   17  tail -f out 
+   18  tail -f err 
+   19  exit
+   20  history

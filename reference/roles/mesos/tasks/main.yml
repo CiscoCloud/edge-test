@@ -1,11 +1,22 @@
 ---
-- name: install packages
+- name: install mesos from deb repo
   apt:
     name: "{{ item }}"
     state: present
     update_cache: yes
   with_items:
     - mesos
+  when: ansible_distribution == 'Ubuntu'
+  tags:
+    - mesos
+
+- name: install mesos from rpm repo
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - mesos
+  when: ansible_distribution == 'CentOS'
   tags:
     - mesos
 
@@ -31,3 +42,5 @@
 
 - include: slave.yml
   when: mesos_mode == 'slave' or mesos_mode == 'both'
+
+- meta: flush_handlers

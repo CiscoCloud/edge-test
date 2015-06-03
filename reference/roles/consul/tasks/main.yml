@@ -62,15 +62,6 @@
   tags:
     - consul
 
-- name: register docker with consul
-  copy:
-    src: etc/consul/docker-service.json
-    dest: /etc/consul
-  notify:
-    - reload consul
-  tags:
-    - consul
-
 - name: deploy tls files
   copy:
     src: "{{ item.src }}"
@@ -130,7 +121,7 @@
 
 # Give consul time to elect a leader
 - name: wait for leader
-  command: consul-wait-for-leader.sh
+  command: /usr/local/bin/consul-wait-for-leader.sh
   tags:
     - consul
 

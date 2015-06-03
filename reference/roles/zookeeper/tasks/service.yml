@@ -1,0 +1,33 @@
+---
+
+- name: register service with upstart
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - src: etc/init/zookeeper.conf.j2
+      dest: /etc/init/zookeeper.conf
+  when: ansible_distribution == 'Ubuntu'
+  notify: restart zookeeper
+  tags:
+    - zookeeper
+
+- name: register service with systemd
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - src: usr/lib/systemd/system/zookeeper.service.j2
+      dest: /usr/lib/systemd/system/zookeeper.service
+  when: ansible_distribution == 'CentOS'
+  notify: restart zookeeper
+  tags:
+    - zookeeper
+
+- meta: flush_handlers

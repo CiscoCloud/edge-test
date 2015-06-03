@@ -15,6 +15,7 @@ umask 007
 kill timeout 300
 
 script
+	. /opt/zookeeper/conf/environment
     exec /opt/zookeeper/bin/zkServer.sh start-foreground
 end script
 
