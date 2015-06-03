@@ -30,11 +30,11 @@ do
 	BATCH_URL+=" $URL"
 done
 while [  true ]; do
-	if [[ $NUM_MSG%100 -eq 0 ]]
+	if [[ $NUM_MSG%10 -eq 0 ]]
 	then
  		echo produced $NUM_MSG messages
  	fi
 
- 	eval 'curl --silent -d "{\"line\": \"i am line\",\"source\": \"generated\",\"tag\": null,\"logtypeid\": 5,\"timings\": [{\"eventName\": \"key1\", \"value\": 123000},{\"eventName\": \"key2\", \"value\": 124000}]}" --header "Content-Type: application/json" -v $BATCH_URL 2> /dev/null'
+ 	eval 'curl --silent -d "{\"line\": \"i am line\",\"source\": \"generated\",\"tag\": null,\"logtypeid\": 5,\"timings\": []}" --header "Content-Type: application/json" -v $BATCH_URL 2> /dev/null'
  	let NUM_MSG=NUM_MSG+1 
 done
