@@ -258,7 +258,7 @@ func (this *TransformExecutor) protoToAvroLogLine(protoLogLine *pb.LogLine, logL
 func (this *TransformExecutor) timing(name string) *avro.Timing {
 	timing := avro.NewTiming()
 	timing.EventName = name
-	timing.Value = time.Now().Unix() * 1000
+	timing.Value = time.Now().UnixNano()
     //TODO ntpstatus
 	return timing
 }

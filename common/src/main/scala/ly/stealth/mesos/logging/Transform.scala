@@ -131,7 +131,7 @@ class Transform(config: ExecutorConfigBase) {
   }
 
   //TODO ntpstatus
-  private def timing(name: String): Timing = Timing.newBuilder().setEventName(name).setValue(System.currentTimeMillis()).build
+  private def timing(name: String): Timing = Timing.newBuilder().setEventName(name).setValue(System.nanoTime()).build
 }
 
 class CharSequenceKeyDeserializer extends KeyDeserializer {
