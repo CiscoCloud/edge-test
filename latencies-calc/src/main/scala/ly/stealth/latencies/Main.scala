@@ -53,7 +53,7 @@ object Main extends App {
   val cassandraConnector = CassandraConnector(sparkConfig)
   cassandraConnector.withSessionDo(session => {
     session.execute("CREATE KEYSPACE IF NOT EXISTS spark_analysis WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
-    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventname text, second int, operation text, value int, ntpstatus int, cnt int, PRIMARY KEY(eventname, second, operation))")
+    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventname text, second bigint, operation text, value bigint, cnt int, PRIMARY KEY(operation, second, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
   })
 
   val consumerConfig = Map(
@@ -89,9 +89,8 @@ object Main extends App {
       import scala.collection.JavaConversions._
       val timings = record.get("timings").asInstanceOf[GenericData.Array[Record]]
       timings.combinations(2).map(entry => {
-        (entry.head.get("key").asInstanceOf[Utf8].toString + "-" + entry.last.get("key").asInstanceOf[Utf8].toString,
-          entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long],
-          entry.last.get("ntpstatus").asInstanceOf[Long] - entry.head.get("ntpstatus").asInstanceOf[Long])
+        (entry.head.get("eventName").asInstanceOf[Utf8].toString + "-" + entry.last.get("eventName").asInstanceOf[Utf8].toString,
+          entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long])
       }).toList
     }).reduce((acc, value) => {
       acc ++ value
@@ -99,13 +98,12 @@ object Main extends App {
       val second = System.currentTimeMillis()/1000
       entry.groupBy(entry => (entry._1)).map { case (key, values) => {
         val timings = values.map(_._2)
-        val ntpstatus = values.map(_._3)
-        Event(key, second, "avg%d%s".format(durationValue, durationUnit), timings.sum / timings.size, ntpstatus.sum / ntpstatus.size, timings.size)
+        Event(key, second, "avg%d%s".format(durationValue, durationUnit), timings.sum / timings.size, timings.size)
       }
       }
     }).persist()
 
-    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"operation\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"long\"},{\"name\":\"ntpstatus\",\"type\":\"long\"},{\"name\":\"cnt\",\"type\":\"long\"}]}"
+    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"operation\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"long\"},{\"name\":\"cnt\",\"type\":\"long\"}]}"
     latencyStream.foreachRDD(rdd => {
       rdd.foreachPartition(latencies => {
         val producer = new KafkaProducer[Any, AnyRef](producerConfig)
@@ -117,7 +115,6 @@ object Main extends App {
             latencyRecord.put("second", latency.second)
             latencyRecord.put("operation", latency.operation)
             latencyRecord.put("value", latency.value)
-            latencyRecord.put("ntpstatus", latency.ntpstatus)
             latencyRecord.put("cnt", latency.cnt)
             val record = new ProducerRecord[Any, AnyRef]("%s-latencies".format(topic), latencyRecord)
             producer.send(record)
@@ -139,5 +136,5 @@ object Main extends App {
   }
 }
 
-case class Event(eventname: String, second: Long, operation: String, value: Long, ntpstatus: Long, cnt: Long)
+case class Event(eventname: String, second: Long, operation: String, value: Long, cnt: Long)
 case class AppConfig(topic: String = "", brokerList: String = "", zookeeper: String = "", schemaRegistryUrl: String = "")
