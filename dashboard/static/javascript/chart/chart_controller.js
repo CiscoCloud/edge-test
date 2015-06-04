@@ -46,7 +46,10 @@
         field: field,
         eventName: eventName,
         sumLat: 0,
-        sumCount: 0, count: 0
+        sumCount: 0,
+        count: 0,
+        minLat: Infinity,
+        maxCount: 0
       };
     };
 
@@ -69,6 +72,12 @@
         $scope.charts[chartId].events = events;
         $scope.charts[chartId].rendered = false;
         if (event.operation == "avg10second") {
+          if (event.value < $scope.charts[chartId].minLat) {
+            $scope.charts[chartId].minLat = event.value;
+          }
+          if (event.count > $scope.charts[chartId].maxCount) {
+            $scope.charts[chartId].maxCount = event.count;
+          }
           $scope.charts[chartId].sumLat += event.value;
           $scope.charts[chartId].sumCount += event.count;
           $scope.charts[chartId].count = $scope.charts[chartId].count + 1;

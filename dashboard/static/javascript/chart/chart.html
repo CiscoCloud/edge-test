@@ -4,11 +4,13 @@
     <h2>Event: {{chart.eventName}}</h3>
     <div ng-if="chart.field == 'value'">
       <h4>Average end to end latency</h4>
-      <p>Overall average: {{chart.avgLat}}</p>
+      <p>Overall average: {{chart.avgLat}} nanoseconds<br>
+      Minimum: {{chart.minLat}} nanoseconds</p>
     </div>
     <div ng-if="chart.field == 'count'">
       <h4>Average count</h4>
-      <p>Overall average: {{chart.avgCount}}</p>
+      <p>Overall average: {{chart.avgCount}}<br>
+      Maximum: {{chart.maxCount}}</p>
     </div>
     <svg id="chart_{{chart.field}}_{{chart.eventName}}"></svg>
   </div>
