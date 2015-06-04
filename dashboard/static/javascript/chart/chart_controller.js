@@ -181,25 +181,6 @@
         operations[i] = (i+1).toString();
       }
 
-      var tooltip = d3.select(".tooltip");
-
-      var styling = function(d) {
-        tooltip.transition()
-          .duration(300)
-          .style("opacity", 0);
-        tooltip.transition()
-          .duration(50)
-          .style("opacity", 0.9);
-        d3.select(this).style("stroke-width", "5px");
-      };
-
-      var unstyling = function(d) {
-        tooltip.transition()
-          .duration(2000)
-          .style("opacity", 0);
-        d3.select(this).style("stroke-width", "2.5px");
-      };
-
       for (var operation in chart.events) {
         color.domain(operations);
         var path = chart.svg.append("path")
@@ -207,8 +188,6 @@
             .attr("class", "line")
             .attr("d", chart.line)
             .style("stroke", function(d) { return color(operation) });
-        path.on("mouseover", styling);
-        path.on("mouseout", unstyling);
       }
 
       $scope.charts[chartId] = chart;
