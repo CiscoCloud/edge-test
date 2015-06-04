@@ -1,0 +1,16 @@
+<div id="charts">
+  <div class="tooltip"></div>
+  <div ng-repeat="(chartId, chart) in charts" ng-init="render($last)" class="col-md-6">
+    <h2>Event: {{chart.eventName}}</h3>
+    <div ng-if="chart.field == 'value'">
+      <h4>Average end to end latency</h4>
+      <p>Overall average: {{chart.avgLat}}</p>
+    </div>
+    <div ng-if="chart.field == 'count'">
+      <h4>Average count</h4>
+      <p>Overall average: {{chart.avgCount}}</p>
+    </div>
+    <svg id="chart_{{chart.field}}_{{chart.eventName}}"></svg>
+  </div>
+</div>
+
