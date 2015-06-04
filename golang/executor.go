@@ -23,6 +23,7 @@ import (
 	"github.com/CiscoCloud/edge-test/golang/transform"
 	"github.com/mesos/mesos-go/executor"
 	"os"
+	"runtime"
 )
 
 var port = flag.Int("port", 0, "Port to bind to")
@@ -50,6 +51,7 @@ func parseAndValidateExecutorArgs() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	parseAndValidateExecutorArgs()
 	fmt.Println("Starting Transform Executor")
 

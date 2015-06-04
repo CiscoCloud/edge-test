@@ -168,6 +168,8 @@ func (this *TransformExecutor) startProducer() {
 	producerConfig.KeyEncoder = kafka.NewKafkaAvroEncoder(cfgMap["schema.registry.url"])
 	producerConfig.ValueEncoder = producerConfig.KeyEncoder
 	producerConfig.SendBufferSize = 10000
+	producerConfig.BatchSize = 2000
+	producerConfig.MaxMessagesPerRequest = 5000
 
 	this.producer = kafka.NewSaramaProducer(producerConfig)
 	go this.produceRoutine()
@@ -184,10 +186,16 @@ func (this *TransformExecutor) handleFunc() func(http.ResponseWriter, *http.Requ
 	if this.config.Sync {
 		return func(w http.ResponseWriter, r *http.Request) {
 			this.handle(r)
+			w.Header().Set("Content-Length", "0")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 		}
 	} else {
 		return func(w http.ResponseWriter, r *http.Request) {
 			go this.handle(r)
+			w.Header().Set("Content-Length", "0")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }
