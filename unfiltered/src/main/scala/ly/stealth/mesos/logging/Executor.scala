@@ -40,6 +40,8 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
+
+  override protected def name(): String = "Unfiltered"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -50,7 +52,7 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
     case request =>
       request.headers("Content-Type").toList.headOption match {
         case Some(contentType) =>
-          if (config.sync) {
+          if (!config.sync) {
             new Thread {
               override def run() {
                 transformer.transform(toBytes(request.inputStream), contentType)
