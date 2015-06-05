@@ -40,6 +40,8 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
+
+  override protected def name(): String = "Play"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -59,7 +61,7 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
 
       data match {
         case Some((contentType, body)) =>
-          if (config.sync) {
+          if (!config.sync) {
             new Thread {
               override def run() {
                 transformer.transform(body, contentType)

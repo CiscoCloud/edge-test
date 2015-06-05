@@ -43,6 +43,8 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
+
+  override protected def name(): String = "Finagle"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -53,7 +55,7 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
     def apply(req: Request): Future[Response] = {
       req.headerMap.get("Content-Type") match {
         case Some(contentType) =>
-          if (config.sync) {
+          if (!config.sync) {
             new Thread {
               override def run() {
                 transformer.transform(req.getContent().array(), contentType)

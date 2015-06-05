@@ -43,6 +43,8 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
+
+  override protected def name(): String = "Spray"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -58,7 +60,7 @@ class TransformActor(config: ExecutorConfigBase) extends Actor with ActorLogging
     case _: Http.Connected => sender ! Http.Register(self)
     case HttpRequest(POST, Uri.Path("/"), headers, entity: HttpEntity.NonEmpty, _) =>
       headers.find(_.is("content-type")).foreach { contentType =>
-        if (config.sync) {
+        if (!config.sync) {
           new Thread {
             override def run() {
               transformer.transform(entity.data.toByteArray, contentType.value)
