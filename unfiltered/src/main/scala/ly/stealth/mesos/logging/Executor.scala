@@ -40,8 +40,6 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
-
-  override protected def name(): String = "Unfiltered"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -55,10 +53,10 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
           if (!config.sync) {
             new Thread {
               override def run() {
-                transformer.transform(toBytes(request.inputStream), contentType)
+                transformer.transform(toBytes(request.inputStream), contentType, "Unfiltered")
               }
             }.start()
-          } else transformer.transform(toBytes(request.inputStream), contentType)
+          } else transformer.transform(toBytes(request.inputStream), contentType, "Unfiltered")
         case None => logger.warn("no Content-Type header provided")
       }
       ResponseString("")

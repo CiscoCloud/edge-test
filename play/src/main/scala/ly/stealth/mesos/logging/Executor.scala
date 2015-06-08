@@ -40,8 +40,6 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
-
-  override protected def name(): String = "Play"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -64,10 +62,10 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
           if (!config.sync) {
             new Thread {
               override def run() {
-                transformer.transform(body, contentType)
+                transformer.transform(body, contentType, "Play")
               }
             }.start()
-          } else transformer.transform(body, contentType)
+          } else transformer.transform(body, contentType, "Play")
         case None => logger.warn("Either no Content-Type header provided or body is empty")
       }
 

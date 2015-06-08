@@ -43,8 +43,6 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
-
-  override protected def name(): String = "Spray"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -63,10 +61,10 @@ class TransformActor(config: ExecutorConfigBase) extends Actor with ActorLogging
         if (!config.sync) {
           new Thread {
             override def run() {
-              transformer.transform(entity.data.toByteArray, contentType.value)
+              transformer.transform(entity.data.toByteArray, contentType.value, "Spray")
             }
           }.start()
-        } else transformer.transform(entity.data.toByteArray, contentType.value)
+        } else transformer.transform(entity.data.toByteArray, contentType.value, "Spray")
       }
       sender ! HttpResponse()
   }

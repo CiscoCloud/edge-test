@@ -208,8 +208,6 @@ func (this *TransformExecutor) handle(r *http.Request) {
 	}
 
 	logLine := avro.NewLogLine()
-    logLine.Source = "Golang"
-	logLine.Size = int64(len(body))
 	contentType := r.Header.Get("Content-Type")
 	switch contentType {
 	case "application/json":
@@ -233,6 +231,12 @@ func (this *TransformExecutor) handle(r *http.Request) {
 		return
 	}
 
+	logLine.Size = int64(len(body))
+	logLine.Source = "Golang"
+	if logLine.Tag == nil {
+		logLine.Tag = make(map[string]string)
+	}
+	logLine.Tag["topic"] = this.config.Topic
 	logLine.Timings = append(logLine.Timings, timing)
 	this.incoming <- logLine
 }

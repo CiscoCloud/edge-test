@@ -51,8 +51,6 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config).run("server", config.dropwizardConfig)
   }
-
-  override protected def name(): String = "Dropwizard"
 }
 
 case class ExecutorConfig(base: ExecutorConfigBase, dropwizardConfig: String = "executor.yml")
