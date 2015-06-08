@@ -58,8 +58,6 @@ trait ExecutorBase extends Executor {
 
   protected def start()
 
-  protected def name(): String
-
   override def registered(driver: ExecutorDriver, executorInfo: ExecutorInfo, framework: FrameworkInfo, slave: SlaveInfo) {
     logger.info("[registered] framework:" + Str.framework(framework) + " slave:" + Str.slave(slave))
   }

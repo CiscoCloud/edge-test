@@ -43,8 +43,6 @@ object Executor extends ExecutorBase {
   override protected def start() {
     new ExecutorEndpoint(config)
   }
-
-  override protected def name(): String = "Finagle"
 }
 
 class ExecutorEndpoint(config: ExecutorConfigBase) {
@@ -58,10 +56,10 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
           if (!config.sync) {
             new Thread {
               override def run() {
-                transformer.transform(req.getContent().array(), contentType)
+                transformer.transform(req.getContent().array(), contentType, "Finagle")
               }
             }.start()
-          } else transformer.transform(req.getContent().array(), contentType)
+          } else transformer.transform(req.getContent().array(), contentType, "Finagle")
         case None => logger.warn("no Content-Type header provided")
       }
       Future.value(Response())

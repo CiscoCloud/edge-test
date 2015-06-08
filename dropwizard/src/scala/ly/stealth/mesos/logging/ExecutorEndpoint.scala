@@ -42,10 +42,10 @@ class Handler(config: ExecutorConfig) {
     if (!config.base.sync) {
       new Thread {
         override def run() {
-          transformer.transform(body, contentType)
+          transformer.transform(body, contentType, "Dropwizard")
         }
       }.start()
-    } else transformer.transform(body, contentType)
+    } else transformer.transform(body, contentType, "Dropwizard")
   }
 }
 
