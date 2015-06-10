@@ -1,36 +1,36 @@
 # Tags
 
-[tag_Name_ONCUE_cluster_kafka]
-[tag_Name_ONCUE_cluster_mesos_master]
-[tag_Name_ONCUE_cluster_mesos_slave]
-[tag_Name_ONCUE_cluster_exhibitor]
+[tag_Name_dev_cluster_kafka]
+[tag_Name_dev_cluster_mesos_master]
+[tag_Name_dev_cluster_mesos_slave]
+[tag_Name_dev_cluster_exhibitor]
 
 # Clusters
 
 [dev_cluster:children]
-tag_Name_ONCUE_cluster_kafka
-tag_Name_ONCUE_cluster_mesos_master
-tag_Name_ONCUE_cluster_mesos_slave
-tag_Name_ONCUE_cluster_exhibitor
+tag_Name_dev_cluster_kafka
+tag_Name_dev_cluster_mesos_master
+tag_Name_dev_cluster_mesos_slave
+tag_Name_dev_cluster_exhibitor
 
 # Role-based aggregation
 
 [consul-server:children]
-tag_Name_ONCUE_cluster_mesos_master
+tag_Name_dev_cluster_exhibitor
 
 [exhibitor:children]
-tag_Name_ONCUE_cluster_exhibitor
+tag_Name_dev_cluster_exhibitor
 
 [kafka:children]
-tag_Name_ONCUE_cluster_kafka
+tag_Name_dev_cluster_kafka
 
 [dse:children]
 
 [mesos-master:children]
-tag_Name_ONCUE_cluster_mesos_master
+tag_Name_dev_cluster_mesos_master
 
 [mesos-slave:children]
-tag_Name_ONCUE_cluster_mesos_slave
+tag_Name_dev_cluster_mesos_slave
 
 [worker-gauntlet:children]
 

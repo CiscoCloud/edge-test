@@ -56,12 +56,17 @@ class TransformActor(config: ExecutorConfigBase) extends Actor with ActorLogging
 
   def receive = {
     case _: Http.Connected => sender ! Http.Register(self)
-    case HttpRequest(POST, Uri.Path("/"), headers, entity: HttpEntity.NonEmpty, _) => {
+    case HttpRequest(POST, Uri.Path("/"), headers, entity: HttpEntity.NonEmpty, _) =>
       headers.find(_.is("content-type")).foreach { contentType =>
-        transformer.transform(entity.data.toByteArray, contentType.value)
+        if (!config.sync) {
+          new Thread {
+            override def run() {
+              transformer.transform(entity.data.toByteArray, contentType.value, "Spray")
+            }
+          }.start()
+        } else transformer.transform(entity.data.toByteArray, contentType.value, "Spray")
       }
       sender ! HttpResponse()
-    }
   }
 }
 

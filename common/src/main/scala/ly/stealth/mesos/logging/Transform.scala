@@ -63,7 +63,7 @@ class Transform(config: ExecutorConfigBase) {
 
   private val avroDecoder = new KafkaAvroDecoder(new VerifiableProperties(props))
 
-  def transform(data: Array[Byte], contentType: String) {
+  def transform(data: Array[Byte], contentType: String, framework: String) {
     val received = timing("received")
     requestsPerSec.mark()
 
@@ -78,8 +78,16 @@ class Transform(config: ExecutorConfigBase) {
 
     logLineOpt.foreach { logLine =>
       logLine.setSize(data.length.toLong)
+      logLine.setSource(framework)
+      if (logLine.getTag == null) logLine.setTag(new java.util.HashMap[CharSequence, CharSequence])
+      logLine.getTag.put("topic", config.topic)
       logLine.getTimings.add(received)
-      logLine.getTimings.add(timing("sent"))
+      val sent = timing("sent")
+      if (sent.getValue < received.getValue) {
+        sent.setValue(sent.getValue + 1000000000L)
+        println(s"Corrected time: ${received.getValue}, ${sent.getValue}")
+      }
+      logLine.getTimings.add(sent)
 
       producer.send(new ProducerRecord[Any, IndexedRecord](config.topic, logLine))
     }
@@ -131,7 +139,8 @@ class Transform(config: ExecutorConfigBase) {
   }
 
   //TODO ntpstatus
-  private def timing(name: String): Timing = Timing.newBuilder().setEventName(name).setValue(System.currentTimeMillis()).build
+  private def timing(name: String): Timing = Timing.newBuilder().setEventName(name)
+    .setValue((System.currentTimeMillis()/1000 * 1000000000) + (System.nanoTime() % 1000000000)).build
 }
 
 class CharSequenceKeyDeserializer extends KeyDeserializer {

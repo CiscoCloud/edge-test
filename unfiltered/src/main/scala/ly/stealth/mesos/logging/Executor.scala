@@ -49,7 +49,14 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
   val plan = unfiltered.netty.cycle.Planify {
     case request =>
       request.headers("Content-Type").toList.headOption match {
-        case Some(contentType) => transformer.transform(toBytes(request.inputStream), contentType)
+        case Some(contentType) =>
+          if (!config.sync) {
+            new Thread {
+              override def run() {
+                transformer.transform(toBytes(request.inputStream), contentType, "Unfiltered")
+              }
+            }.start()
+          } else transformer.transform(toBytes(request.inputStream), contentType, "Unfiltered")
         case None => logger.warn("no Content-Type header provided")
       }
       ResponseString("")

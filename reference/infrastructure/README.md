@@ -1,7 +1,3 @@
-
-# Terraform-ation for infrastructure
-Hashicorp Terraform version >= 0.5.1 is required
-
 Pre-configuration
 ```
 export AWS_ACCESS_KEY_ID='YOUR_AWS_API_KEY'
@@ -15,13 +11,14 @@ terraform remote config -backend=S3 \
  -backend-config="region=us-west-1"
 ```
 
-Deployment to AWS
-(at the moment, dev_cluster only)
-```
 cd aws
 
-terraform plan -input=false # Use default variables
-terraform apply -input=false
+./terraform plan -input=false # Use default variables
+./terraform apply -input=false
+
+cd ../../
+ansible-playbook site.yml --extra-vars="cluster=dev_cluster"
+
 ```
 
 When the work is done, tear down the cluster

@@ -1,25 +1,26 @@
-edge-test spray
+edge-test dropwizard
 ================
 
 Pre-Requisites
 ==============
 
-- java 1.7 or higher
+- java 1.7 or higher   
 - Apache Mesos 0.19 or newer
-
+ 
 Build Instructions
 =================
 
-- Get the project
+- Get the project   
 ```
 $ git clone https://github.com/CiscoCloud/edge-test.git
+$ cd edge-test/dropwizard
 ```
 
 - Build the scheduler and the executor
 ```
 $ ./gradlew clean jar
 ```
-- Place the built jar file somewhere on Mesos Master node
+- Place the built jar file, `config.yml` and `executor.yml` somewhere on Mesos Master node
 
 Running
 =======
@@ -42,6 +43,7 @@ $ java -jar logging-mesos-0.1.jar --master master:5050 --user vagrant --executor
 --master="127.0.0.1:5050": Mesos Master address <ip:port>.
 --mem.per.task=256: Memory per task.
 --producer.config: Producer properties file name.
+--sync: Flag to respond only after decoding-encoding is done.
 --topic: Topic to produce transformed data to.
 --user: Mesos user to run for.
 ```

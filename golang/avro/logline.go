@@ -3,12 +3,12 @@ package avro
 import "github.com/stealthly/go-avro"
 
 type LogLine struct {
-	Line      interface{}
-	Source    interface{}
-	Tag       map[string]string
-	Logtypeid interface{}
-	Timings   []*Timing
-	Size      interface{}
+	Line      interface{}       `avro:"line"`
+	Source    interface{}       `avro:"source"`
+	Tag       map[string]string `avro:"tag"`
+	Logtypeid interface{}       `avro:"logtypeid"`
+	Timings   []*Timing         `avro:"timings"`
+	Size      interface{}       `avro:"size"`
 }
 
 func NewLogLine() *LogLine {
@@ -23,9 +23,9 @@ func (this *LogLine) Schema() avro.Schema {
 }
 
 type Timing struct {
-	EventName string
-	Value     int64
-	Ntpstatus interface{}
+	EventName string      `avro:"eventName"`
+	Value     int64       `avro:"value"`
+	Ntpstatus interface{} `avro:"ntpstatus"`
 }
 
 func NewTiming() *Timing {

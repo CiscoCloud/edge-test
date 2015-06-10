@@ -14,6 +14,8 @@ resource "aws_internet_gateway" "igw" {
 	tags {
 		Name = "${var.vpc_name}"
 	}
+
+	depends_on = ["aws_vpc.vpc"]
 }
 
 # Public subnets

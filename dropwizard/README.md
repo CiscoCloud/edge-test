@@ -42,6 +42,7 @@ $ java -jar logging-mesos-0.1.jar --master master:5050 --user vagrant --executor
 --master="127.0.0.1:5050": Mesos Master address <ip:port>.
 --mem.per.task=256: Memory per task.
 --producer.config: Producer properties file name.
+--sync: Flag to respond only after decoding-encoding is done.
 --topic: Topic to produce transformed data to.
 --user: Mesos user to run for.
 ```

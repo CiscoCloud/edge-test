@@ -15,8 +15,10 @@
 
 # -------------
 # VM box config
-vm_box = 'ubuntu/trusty64'
-vm_box_url = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
+#vm_box = 'ubuntu/trusty64'
+#vm_box_url = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
+vm_box = 'chef/centos-7.1'
+vm_box_url = ''
 
 # Number of nodes
 NGENERIC = 3
@@ -40,18 +42,23 @@ nodes.default = {
 
 # Ansible provisioner config
 ansible_provision = Proc.new do |ansible|
-  ansible.playbook = "site.yml"
+  ansible.playbook = "vagrant.yml"
+  #ansible.verbose = 'vvvv'
   ansible.groups = {
-    #"exhibitor"          => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    #"kafka"              => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    #"zookeeper"           => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "consul-server"       => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "mesos-master"        => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "dev_cluster"         => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "vagrant"             => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "deployment"          => ['exhibitor','kafka','zookeeper']
+    "vagrant"                => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "dc_vagrant:children"    => ['vagrant'],
+    "consul-server:children" => ['vagrant'],
+    "zookeeper:children"     => ['vagrant'],
+    "exhibitor:children"     => ['vagrant'],
+    "mesos-master:children"  => ['vagrant'],
+    "mesos-slave:children"   => ['vagrant']
   }
-  ansible.limit = 'deployment'
+  ansible.extra_vars = {
+    cluster: "vagrant",
+    datacenter: "dc_vagrant",
+    consul_is_server: "yes",
+    mesos_mode: "both"
+  }
 end
 
 # -------------
@@ -65,7 +72,6 @@ Vagrant.configure('2') do |config|
 
         config.vm.define node_name do |config|
             config.vm.box = vm_box
-            config.vm.box_url = vm_box_url
 
             config.vm.hostname = "#{node_name}.vagrant.elodina.net"
 

@@ -39,7 +39,13 @@ class Handler(config: ExecutorConfig) {
 
   @POST
   def handle(body: Array[Byte], @HeaderParam("Content-Type") contentType: String) {
-    transformer.transform(body, contentType)
+    if (!config.base.sync) {
+      new Thread {
+        override def run() {
+          transformer.transform(body, contentType, "Dropwizard")
+        }
+      }.start()
+    } else transformer.transform(body, contentType, "Dropwizard")
   }
 }
 
