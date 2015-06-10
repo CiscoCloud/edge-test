@@ -5,9 +5,10 @@ import java.util.concurrent.TimeUnit
 
 import com.bealetech.metrics.reporting.{Statsd, StatsdReporter}
 import com.codahale.metrics.MetricRegistry
+import org.apache.spark.SecurityManager
 import org.apache.spark.metrics.MetricsSystem
 
-private[spark] class StatsdSink(val property: Properties, val registry: MetricRegistry) extends Sink {
+private[spark] class StatsdSink(val property: Properties, val registry: MetricRegistry, securityMgr: SecurityManager) extends Sink {
   val STATSD_DEFAULT_PERIOD = 10
   val STATSD_DEFAULT_RATE_UNIT = "SECONDS"
   val STATSD_DEFAULT_DURATION_UNIT = "MILLISECONDS"
