@@ -128,5 +128,3 @@ object Main extends App {
 }
 
 case class AppConfig(topic: String = "", brokerList: String = "", zookeeper: String = "", partitions: Int = 1, schemaRegistryUrl: String = "")
-
-{"compatibility": "NONE"}
