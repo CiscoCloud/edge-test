@@ -84,7 +84,7 @@ object Main extends App {
       (timings.head.get("eventName").asInstanceOf[Utf8].toString + "-" + timings.last.get("eventName").asInstanceOf[Utf8].toString,
        timings.head.get("value").asInstanceOf[Long] / 1000000000,
        timings.last.get("value").asInstanceOf[Long] / 1000000000,
-       timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long] / 1000000,
+        (timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long]) / 1000000,
        record.get("source").asInstanceOf[Utf8].toString,
        record.get("size").asInstanceOf[Long],
        topic)
@@ -128,3 +128,5 @@ object Main extends App {
 }
 
 case class AppConfig(topic: String = "", brokerList: String = "", zookeeper: String = "", partitions: Int = 1, schemaRegistryUrl: String = "")
+
+{"compatibility": "NONE"}
