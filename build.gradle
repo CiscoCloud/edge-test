@@ -219,3 +219,27 @@ project("play") {
         manifest.attributes("Main-Class": "ly.stealth.mesos.logging.Scheduler")
     }
 }
+
+project("netty") {
+    version = '0.1'
+
+    jar.archiveName = "logging-mesos-${version}.jar"
+
+    dependencies {
+        compile project(":common")
+        compile 'io.netty:netty-all:4.0.28.Final'
+        testCompile 'junit:junit:4.12'
+    }
+
+    jar {
+        dependsOn 'test'
+        doFirst {
+            from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+                exclude "META-INF/*.SF"
+                exclude "META-INF/*.DSA"
+                exclude "META-INF/*.RSA"
+            }
+        }
+        manifest.attributes("Main-Class": "ly.stealth.mesos.logging.Scheduler")
+    }
+}
