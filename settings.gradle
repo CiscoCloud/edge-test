@@ -1,1 +1,1 @@
-include 'latencies-calc', 'common', 'dropwizard', 'finagle', 'spray', 'play', 'unfiltered', 'netty'
+include 'latencies-calc', 'common', 'dropwizard', 'finagle', 'spray', 'play', 'unfiltered', 'netty', 'spark-statsd'
