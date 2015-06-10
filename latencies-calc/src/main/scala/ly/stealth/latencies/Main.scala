@@ -15,15 +15,14 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming._
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka._
 
 object Main extends App {
   val parser = new scopt.OptionParser[AppConfig]("spark-analysis") {
     head("Latencies calculation job", "1.0")
-    opt[String]("topic") unbounded() required() action { (value, config) =>
+    opt[String]("topics") unbounded() required() action { (value, config) =>
       config.copy(topic = value)
-    } text ("Topic to read data from")
+    } text ("Comma separated list of topics to read data from")
     opt[String]("zookeeper") unbounded() required() action { (value, config) =>
       config.copy(zookeeper = value)
     } text ("Zookeeper connection string - host:port")
@@ -33,6 +32,9 @@ object Main extends App {
     opt[String]("schema.registry.url") unbounded() required() action { (value, config) =>
       config.copy(schemaRegistryUrl = value)
     } text ("Schema registry URL")
+    opt[Int]("partitions") unbounded() required() action { (value, config) =>
+      config.copy(partitions = value)
+    } text ("Initial amount of RDD partitions")
     checkConfig { c =>
       if (c.topic.isEmpty || c.brokerList.isEmpty) {
         failure("You haven't provided all required parameters")
@@ -53,7 +55,7 @@ object Main extends App {
   val cassandraConnector = CassandraConnector(sparkConfig)
   cassandraConnector.withSessionDo(session => {
     session.execute("CREATE KEYSPACE IF NOT EXISTS spark_analysis WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
-    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(eventname text, second bigint, operation text, value bigint, cnt int, PRIMARY KEY(operation, second, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
+    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(framework text, second bigint, message_size bigint, eventname text, latency double, received_count int, sent_count int, PRIMARY KEY(framework, second, message_size, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
   })
 
   val consumerConfig = Map(
@@ -67,57 +69,52 @@ object Main extends App {
   producerConfig.put(VALUE_SERIALIZER_CLASS_CONFIG, classOf[KafkaAvroSerializer])
   producerConfig.put("schema.registry.url", appConfig.schemaRegistryUrl)
 
-  start(ssc, consumerConfig, producerConfig, appConfig.topic)
+  start(ssc, consumerConfig, producerConfig, appConfig.topic, appConfig.partitions)
 
   ssc.start()
   ssc.awaitTermination()
 
-  def start(ssc: StreamingContext, consumerConfig: Map[String, String], producerConfig: Properties, topic: String) = {
-    val stream = KafkaUtils.createStream[Array[Byte], SchemaAndData, DefaultDecoder, AvroDecoder](ssc, consumerConfig, Map(topic -> 2), StorageLevel.MEMORY_AND_DISK_SER).persist()
-    stream.persist()
-    calculateAverages(stream, "second", 10, topic, producerConfig)
-    calculateAverages(stream, "second", 30, topic, producerConfig)
-    calculateAverages(stream, "minute", 1, topic, producerConfig)
-    calculateAverages(stream, "minute", 5, topic, producerConfig)
-    calculateAverages(stream, "minute", 10, topic, producerConfig)
-    calculateAverages(stream, "minute", 15, topic, producerConfig)
-  }
-
-  def calculateAverages(stream: DStream[(Array[Byte], SchemaAndData)], durationUnit: String, durationValue: Long, topic: String, producerConfig: Properties) = {
-    val latencyStream = stream.window(windowDuration(durationUnit, durationValue)).map(value => {
+  def start(ssc: StreamingContext, consumerConfig: Map[String, String], producerConfig: Properties, topics: String, partitions: Int) = {
+    val topicMap = topics.split(",").map(_ -> partitions).toMap
+    val latencyStream = KafkaUtils.createStream[Array[Byte], SchemaAndData, DefaultDecoder, AvroDecoder](ssc, consumerConfig, topicMap, StorageLevel.MEMORY_ONLY).map(value => {
       val record = value._2.deserialize().asInstanceOf[GenericRecord]
       import scala.collection.JavaConversions._
       val timings = record.get("timings").asInstanceOf[GenericData.Array[Record]]
-      timings.combinations(2).map(entry => {
-        (entry.head.get("eventName").asInstanceOf[Utf8].toString + "-" + entry.last.get("eventName").asInstanceOf[Utf8].toString,
-          entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long])
-      }).toList
-    }).reduce((acc, value) => {
-      acc ++ value
-    }).flatMap(entry => {
-      val second = System.currentTimeMillis()/1000
-      entry.groupBy(entry => (entry._1)).map { case (key, values) => {
-        val timings = values.map(_._2)
-        Event(key, second, "avg%d%s".format(durationValue, durationUnit), timings.sum / timings.size, timings.size)
-      }
-      }
-    }).persist()
+      val topic = record.get("tag").asInstanceOf[java.util.Map[Utf8, Utf8]].get(new Utf8("topic")).toString
+      (timings.head.get("eventName").asInstanceOf[Utf8].toString + "-" + timings.last.get("eventName").asInstanceOf[Utf8].toString,
+       timings.head.get("value").asInstanceOf[Long] / 1000000000,
+       timings.last.get("value").asInstanceOf[Long] / 1000000000,
+       (timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long]).toDouble / 1000000,
+       record.get("source").asInstanceOf[Utf8].toString,
+       record.get("size").asInstanceOf[Long],
+       topic)
+    }).transform( rdd => {
+      rdd.groupBy(entry => (entry._1, entry._3, entry._5, entry._6, entry._7))
+    }.map( entry => {
+      val key = entry._1
+      val values = entry._2
+      val receivedValuesCount = values.count(item => item._2 == item._3).toLong
+      val avgLatency = values.map(_._4).sum / values.size
+      (key._3, key._2, key._4, key._1, avgLatency, receivedValuesCount, values.size.toLong, key._5)
+    })).persist()
 
-    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"operation\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"long\"},{\"name\":\"cnt\",\"type\":\"long\"}]}"
+    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"framework\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"message_size\",\"type\":\"long\"},{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"latency\",\"type\":\"double\"},{\"name\":\"received_count\",\"type\":\"long\"},{\"name\":\"sent_count\",\"type\":\"long\"}]}"
     latencyStream.foreachRDD(rdd => {
-      rdd.foreachPartition(latencies => {
+      rdd.foreachPartition(events => {
         val producer = new KafkaProducer[Any, AnyRef](producerConfig)
         val eventSchema = new Schema.Parser().parse(schema)
         try {
-          for (latency <- latencies) {
+          for (event <- events) {
             val latencyRecord = new GenericData.Record(eventSchema)
-            latencyRecord.put("eventname", latency.eventname)
-            latencyRecord.put("second", latency.second)
-            latencyRecord.put("operation", latency.operation)
-            latencyRecord.put("value", latency.value)
-            latencyRecord.put("cnt", latency.cnt)
-            val record = new ProducerRecord[Any, AnyRef]("%s-latencies".format(topic), latencyRecord)
-            producer.send(record)
+            latencyRecord.put("framework", event._1)
+            latencyRecord.put("second", event._2)
+            latencyRecord.put("message_size", event._3)
+            latencyRecord.put("eventname", event._4)
+            latencyRecord.put("latency", event._5)
+            latencyRecord.put("received_count", event._6)
+            latencyRecord.put("sent_count", event._7)
+            val record = new ProducerRecord[Any, AnyRef]("%s-latencies".format(event._8), latencyRecord)
+            producer.send(record).get()
           }
         } finally {
           producer.close()
@@ -126,15 +123,9 @@ object Main extends App {
     })
 
     latencyStream.foreachRDD(rdd => {
-      rdd.saveToCassandra("spark_analysis", "events")
+      rdd.saveToCassandra("spark_analysis", "events", SomeColumns("framework", "second", "message_size", "eventname", "latency", "received_count", "sent_count"))
     })
-  }
-  
-  def windowDuration(unit: String, durationValue: Long): Duration = unit match {
-    case "second" => Seconds(durationValue)
-    case "minute" => Minutes(durationValue)
   }
 }
 
-case class Event(eventname: String, second: Long, operation: String, value: Long, cnt: Long)
-case class AppConfig(topic: String = "", brokerList: String = "", zookeeper: String = "", schemaRegistryUrl: String = "")
+case class AppConfig(topic: String = "", brokerList: String = "", zookeeper: String = "", partitions: Int = 1, schemaRegistryUrl: String = "")
