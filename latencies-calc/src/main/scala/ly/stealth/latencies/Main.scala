@@ -16,8 +16,6 @@ import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.kafka._
-import org.apache.spark.SparkContext._
-import org.apache.spark.streaming.dstream.DStream._
 
 object Main extends App {
   val parser = new scopt.OptionParser[AppConfig]("spark-analysis") {
@@ -83,27 +81,22 @@ object Main extends App {
       import scala.collection.JavaConversions._
       val timings = record.get("timings").asInstanceOf[GenericData.Array[Record]]
       val topic = record.get("tag").asInstanceOf[java.util.Map[Utf8, Utf8]].get(new Utf8("topic")).toString
-      timings.combinations(2).map(entry => {
-        (entry.head.get("eventName").asInstanceOf[Utf8].toString + "-" + entry.last.get("eventName").asInstanceOf[Utf8].toString,
-          entry.head.get("value").asInstanceOf[Long] / 1000000000,
-          entry.last.get("value").asInstanceOf[Long] / 1000000000,
-          (entry.last.get("value").asInstanceOf[Long] - entry.head.get("value").asInstanceOf[Long]).toDouble / 1000000,
-          record.get("source").asInstanceOf[Utf8].toString,
-          record.get("size").asInstanceOf[Long],
-          topic)
-      }).toList
-    }).repartition(1).reduce((acc, value) => {
-      acc ++ value
-    }).flatMap(entry => {
-      entry.groupBy(entry => (entry._1, entry._3, entry._5, entry._6, entry._7)).map { case (sentKey, sentValues) => {
-        val avgLatency = sentValues.map(_._4).sum / sentValues.size
-        sentValues.groupBy(entry => (entry._1, entry._2, entry._5, entry._6, entry._7)).map { case (receivedKey, receivedValues) => {
-          (sentKey._3, sentKey._2, sentKey._4, sentKey._1, avgLatency, receivedValues.size.toLong, sentValues.size.toLong, sentKey._5)
-        }
-        }
-      }
-      }.reduce((acc, curr) => acc ++ curr)
-    }).persist()
+      (timings.head.get("eventName").asInstanceOf[Utf8].toString + "-" + timings.last.get("eventName").asInstanceOf[Utf8].toString,
+       timings.head.get("value").asInstanceOf[Long] / 1000000000,
+       timings.last.get("value").asInstanceOf[Long] / 1000000000,
+       (timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long]).toDouble / 1000000,
+       record.get("source").asInstanceOf[Utf8].toString,
+       record.get("size").asInstanceOf[Long],
+       topic)
+    }).transform( rdd => {
+      rdd.groupBy(entry => (entry._1, entry._3, entry._5, entry._6, entry._7))
+    }.map( entry => {
+      val key = entry._1
+      val values = entry._2
+      val receivedValuesCount = values.count(item => item._2 == item._3).toLong
+      val avgLatency = values.map(_._4).sum / values.size
+      (key._3, key._2, key._4, key._1, avgLatency, receivedValuesCount, values.size.toLong, key._5)
+    })).persist()
 
     val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"framework\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"message_size\",\"type\":\"long\"},{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"latency\",\"type\":\"double\"},{\"name\":\"received_count\",\"type\":\"long\"},{\"name\":\"sent_count\",\"type\":\"long\"}]}"
     latencyStream.foreachRDD(rdd => {
@@ -120,8 +113,8 @@ object Main extends App {
             latencyRecord.put("latency", event._5)
             latencyRecord.put("received_count", event._6)
             latencyRecord.put("sent_count", event._7)
-            val record = new ProducerRecord[Any, AnyRef]("%s-latencies".format(topics), latencyRecord)
-            producer.send(record)
+            val record = new ProducerRecord[Any, AnyRef]("%s-latencies".format(event._8), latencyRecord)
+            producer.send(record).get()
           }
         } finally {
           producer.close()
