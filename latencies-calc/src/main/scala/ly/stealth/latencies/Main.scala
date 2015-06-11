@@ -55,7 +55,7 @@ object Main extends App {
   val cassandraConnector = CassandraConnector(sparkConfig)
   cassandraConnector.withSessionDo(session => {
     session.execute("CREATE KEYSPACE IF NOT EXISTS spark_analysis WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
-    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(framework text, second bigint, message_size bigint, eventname text, latency double, received_count int, sent_count int, PRIMARY KEY(framework, second, message_size, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
+    session.execute("CREATE TABLE IF NOT EXISTS spark_analysis.events(framework text, second bigint, message_size bigint, eventname text, latency counter, received_count counter, sent_count counter, PRIMARY KEY(framework, second, message_size, eventname)) WITH CLUSTERING ORDER BY (second DESC)")
   })
 
   val consumerConfig = Map(
@@ -84,7 +84,7 @@ object Main extends App {
       (timings.head.get("eventName").asInstanceOf[Utf8].toString + "-" + timings.last.get("eventName").asInstanceOf[Utf8].toString,
        timings.head.get("value").asInstanceOf[Long] / 1000000000,
        timings.last.get("value").asInstanceOf[Long] / 1000000000,
-       (timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long]).toDouble / 1000000,
+        (timings.last.get("value").asInstanceOf[Long] - timings.head.get("value").asInstanceOf[Long]) / 1000000,
        record.get("source").asInstanceOf[Utf8].toString,
        record.get("size").asInstanceOf[Long],
        topic)
@@ -94,11 +94,10 @@ object Main extends App {
       val key = entry._1
       val values = entry._2
       val receivedValuesCount = values.count(item => item._2 == item._3).toLong
-      val avgLatency = values.map(_._4).sum / values.size
-      (key._3, key._2, key._4, key._1, avgLatency, receivedValuesCount, values.size.toLong, key._5)
+      (key._3, key._2, key._4, key._1, values.map(_._4).sum.toLong, receivedValuesCount, values.size.toLong, key._5)
     })).persist()
 
-    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"framework\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"message_size\",\"type\":\"long\"},{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"latency\",\"type\":\"double\"},{\"name\":\"received_count\",\"type\":\"long\"},{\"name\":\"sent_count\",\"type\":\"long\"}]}"
+    val schema = "{\"type\":\"record\",\"name\":\"event\",\"fields\":[{\"name\":\"framework\",\"type\":\"string\"},{\"name\":\"second\",\"type\":\"long\"},{\"name\":\"message_size\",\"type\":\"long\"},{\"name\":\"eventname\",\"type\":\"string\"},{\"name\":\"latency\",\"type\":\"long\"},{\"name\":\"received_count\",\"type\":\"long\"},{\"name\":\"sent_count\",\"type\":\"long\"}]}"
     latencyStream.foreachRDD(rdd => {
       rdd.foreachPartition(events => {
         val producer = new KafkaProducer[Any, AnyRef](producerConfig)
