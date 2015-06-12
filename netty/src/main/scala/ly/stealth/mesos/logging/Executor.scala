@@ -24,6 +24,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, ChannelInitializer, SimpleChannelInboundHandler}
+import io.netty.handler.codec.http.HttpHeaders.Names._
 import io.netty.handler.codec.http.HttpResponseStatus._
 import io.netty.handler.codec.http.HttpVersion._
 import io.netty.handler.codec.http._
@@ -73,7 +74,7 @@ class ServerInitializer(config: ExecutorConfigBase) extends ChannelInitializer[S
   override def initChannel(ch: SocketChannel) {
     val pipeline = ch.pipeline()
     pipeline.addLast(new HttpRequestDecoder)
-    pipeline.addLast(new HttpRequestEncoder)
+    pipeline.addLast(new HttpResponseEncoder)
     pipeline.addLast(new ServerHandler(config))
   }
 }
@@ -114,8 +115,11 @@ class ServerHandler(config: ExecutorConfigBase) extends SimpleChannelInboundHand
           } else transformer.transform(body, contentType, "Netty")
         }
 
-        writeResponse(content, ctx)
-        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)
+        if (msg.isInstanceOf[LastHttpContent]) {
+          if (!writeResponse(content, ctx)) {
+            ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)
+          }
+        }
       case _ =>
     }
   }
@@ -125,11 +129,22 @@ class ServerHandler(config: ExecutorConfigBase) extends SimpleChannelInboundHand
     ctx.write(response)
   }
 
-  private def writeResponse(current: HttpObject, ctx: ChannelHandlerContext) {
+  private def writeResponse(current: HttpObject, ctx: ChannelHandlerContext): Boolean = {
+    val keepAlive = HttpHeaders.isKeepAlive(request)
+
     val status = if (current.getDecoderResult.isSuccess) OK else BAD_REQUEST
     val response = new DefaultFullHttpResponse(HTTP_1_1, status)
 
+    response.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8")
+
+    if (keepAlive) {
+      response.headers().set(CONTENT_LENGTH, "0")
+      response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
+    }
+
     ctx.write(response)
+
+    keepAlive
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
