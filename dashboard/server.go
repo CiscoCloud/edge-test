@@ -90,6 +90,7 @@ func (this *App) sendToAll(message *Event) {
 
 func startWebServer(port int) {
 	hostName, _ := os.Hostname()
+	fmt.Println("Starting server")
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", hostName, port), nil)
 	if err != nil {
 		log.Fatal(err)

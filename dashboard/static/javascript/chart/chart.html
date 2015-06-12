@@ -1,18 +1,41 @@
 <div id="charts">
+  <div ng-if="dataAvailable === false" class="alert alert-warning">No data available</div>
   <div class="tooltip"></div>
-  <div ng-repeat="(chartId, chart) in charts" ng-init="render($last)" class="col-md-6">
+  <div ng-repeat="(chartId, chart) in charts" ng-init="render($last)" class="col-md-12">
     <h2>Event: {{chart.eventName}}</h3>
-    <div ng-if="chart.field == 'value'">
-      <h4>Average end to end latency</h4>
-      <p>Overall average: {{chart.avgLat}} nanoseconds<br>
-      Minimum: {{chart.minLat}} nanoseconds</p>
+    <h4 ng-if="chart.field == 'latency'">End to end latency</h4>
+    <h4 ng-if="chart.field == 'count_received'">Event count</h4>
+    <div class="col-md-9">
+      <svg id="chart_{{chart.field}}_{{chart.eventName}}"></svg>
     </div>
-    <div ng-if="chart.field == 'count'">
-      <h4>Average count</h4>
-      <p>Overall average: {{chart.avgCount}}<br>
-      Maximum: {{chart.maxCount}}</p>
+    <div ng-if="chart.field == 'latency'" class="col-md-3">
+      <table class="table">
+        <tr>
+          <th>Framework</th>
+          <th>AVG</th>
+          <th>MIN</th>
+        </tr>
+        <tr ng-repeat="stat in stats_latency">
+          <td><font color="{{colors[stat.framework]}}"><b>{{stat.framework}}</b></font></td>
+          <td>{{stat.avgLatency}}</td>
+          <td>{{stat.minLatency}}</td>
+        </tr>
+      </table>
     </div>
-    <svg id="chart_{{chart.field}}_{{chart.eventName}}"></svg>
+    <div ng-if="chart.field == 'count_received'" class="col-md-3">
+      <table class="table">
+        <tr>
+          <th>Framework</th>
+          <th>AVG</th>
+          <th>MAX</th>
+        </tr>
+        <tr ng-repeat="stat in stats_count">
+          <td><font color="{{colors[stat.framework]}}"><b>{{stat.framework}}</b></font></td>
+          <td>{{stat.avgCount}}</td>
+          <td>{{stat.maxCount}}</td>
+        </tr>
+      </table>
+    </div>
   </div>
 </div>
 
