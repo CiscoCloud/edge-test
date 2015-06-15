@@ -53,11 +53,13 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
   private val bossGroup = new NioEventLoopGroup(1)
   private val workerGroup = new NioEventLoopGroup()
 
+  private val transformer = new Transform(config)
+
   val serverBootstrap = new ServerBootstrap()
   serverBootstrap.group(bossGroup, workerGroup)
     .channel(classOf[NioServerSocketChannel])
     .handler(new LoggingHandler(LogLevel.INFO))
-    .childHandler(new ServerInitializer(config))
+    .childHandler(new ServerInitializer(config, transformer))
 
   new Thread() {
     override def run() {
@@ -70,18 +72,16 @@ class ExecutorEndpoint(config: ExecutorConfigBase) {
   }.start()
 }
 
-class ServerInitializer(config: ExecutorConfigBase) extends ChannelInitializer[SocketChannel] {
+class ServerInitializer(config: ExecutorConfigBase, transformer: Transform) extends ChannelInitializer[SocketChannel] {
   override def initChannel(ch: SocketChannel) {
     val pipeline = ch.pipeline()
     pipeline.addLast(new HttpRequestDecoder)
     pipeline.addLast(new HttpResponseEncoder)
-    pipeline.addLast(new ServerHandler(config))
+    pipeline.addLast(new ServerHandler(config, transformer))
   }
 }
 
-class ServerHandler(config: ExecutorConfigBase) extends SimpleChannelInboundHandler[Any] {
-  private val transformer = new Transform(config)
-
+class ServerHandler(config: ExecutorConfigBase, transformer: Transform) extends SimpleChannelInboundHandler[Any] {
   private var request: HttpRequest = null
   private var contentType: String = ""
 
