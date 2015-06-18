@@ -1,0 +1,32 @@
+{
+  "id": "{{ kafka_mesos_id }}",
+  "cpus": {{ kafka_mesos_cpus }},
+  "mem": {{ kafka_mesos_mem }},
+  "instances": 1,
+  "cmd": "/usr/bin/java -jar kafka-mesos-{{ kafka_mesos_version }}.jar scheduler --master={{ kafka_mesos_zk_connect }} --zk={{ kafka_mesos_zk_dns }}:{{ kafka_mesos_zk_port }} --api=http://{{ kafka_mesos_id}}.service.{{ consul_dc }}:{{ kafka_mesos_api_port }} --storage=\"{{ kafka_mesos_storage }}\" --framework-name=\"{{ kafka_mesos_framework_name }}\" --log=scheduler.log",
+  "uris": [ 
+    "{{ kafka_mirror }}/kafka_{{ kafka_version }}.tgz", 
+    "{{ kafka_mesos_mirror }}/kafka-mesos-{{ kafka_mesos_version }}.jar"
+  ],
+  "ports": [{{ kafka_mesos_api_port }}],
+  "healthChecks": [
+    {
+      "protocol": "HTTP",
+      "path": "/health",
+      "gracePeriodSeconds": 120,
+      "intervalSeconds": 60,
+      "portIndex": 0,
+      "timeoutSeconds": 30,
+      "maxConsecutiveFailures": 3
+    },
+    {
+      "protocol": "HTTP",
+      "path": "/api/brokers/status",
+      "gracePeriodSeconds": 120,
+      "intervalSeconds": 60,
+      "portIndex": 0,
+      "timeoutSeconds": 30,
+      "maxConsecutiveFailures": 0
+    }
+  ]
+}

@@ -7,4 +7,4 @@ LOGS="{{ log_dir }}"
 ULIMIT="{{ ulimit }}"
 
 # environment variables
-export MESOS_HOSTNAME={{ inventory_hostname }}
+export MESOS_HOSTNAME={{ ansible_hostname }}.node.{{ consul_dc }}

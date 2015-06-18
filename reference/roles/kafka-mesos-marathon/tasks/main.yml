@@ -1,0 +1,21 @@
+---
+- name: create json file for kafka-mesos scheduler
+  template:
+    src: '{{ item }}.json.j2'
+    dest: /etc/marathon/{{ item }}.json
+  with_items:
+    - kafka-mesos
+  tags:
+    - kafka-mesos-marathon
+
+- name: start kafka-mesos scheduler job
+  run_once: true
+  command: 'curl -X PUT -d@/etc/marathon/{{ item }}.json -H "Content-Type: application/json" http://localhost:18080/v2/apps/{{ item }}'
+  changed_when: false
+  with_items:
+    - kafka-mesos
+  tags:
+    - kafka-mesos-marathon
+    - marathon-jobs
+
+- include: brokers.yml

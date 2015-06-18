@@ -5,26 +5,35 @@
   roles:
     - common
     - consul
+    - consul-template
+    - dnsmasq
 
-- hosts: exhibitor
+- hosts: consul-servers
+
+- hosts: zookeepers
   sudo: True
   roles:
     - zookeeper
-    #- exhibitor
 
-#- hosts: kafka
+- hosts: exhibitors
+  sudo: True
+  roles:
+    - exhibitor
+
+- hosts: mesos-slaves
+  sudo: True
+  roles:
+    - mesos
+
+- hosts: mesos-masters
+  sudo: True
+  roles:
+    - mesos
+    - marathon
+    - kafka-mesos-marathon
+
+#- hosts: exhibitor
 #  sudo: True
 #  roles:
-#    - kafka
-
-- hosts: mesos-master
-  sudo: True
-  roles:
-    - mesos
-    #- marathon
-
-- hosts: mesos-slave
-  sudo: True
-  roles:
-    - mesos
-    #- marathon
+    #- zookeeper
+    #- exhibitor

@@ -8,7 +8,6 @@
     - consul
 
 - name: remove agent_acl consul config
-  sudo: yes
   file:
     path: /etc/consul/agent_acl.json
     state: absent

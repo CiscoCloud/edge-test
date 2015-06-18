@@ -1,0 +1,72 @@
+---
+- name: install packages
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - dnsmasq
+    - bind-utils
+    - NetworkManager
+  tags:
+    - dnsmasq
+    - bootstrap
+
+- name: ensure dnsmasq.d directory exists
+  file: 
+    path: /etc/NetworkManager/dnsmasq.d
+    state: directory
+  tags:
+    - dnsmasq
+
+- name: configure dnsmasq for consul 
+  template: 
+    src: 10-consul 
+    dest: /etc/dnsmasq.d/10-consul
+    mode: 755
+  notify:
+    - restart dnsmasq
+  tags:
+    - dnsmasq
+
+- name: enable dnsmasq
+  service:
+    name: dnsmasq
+    state: started
+    enabled: yes
+  tags:
+    - dnsmasq
+
+- name: configure networkmanager for dnsmasq
+  lineinfile:
+    dest: /etc/NetworkManager/NetworkManager.conf
+    line: "dns=none"
+    insertafter: "^\\[main\\]$"
+  notify:
+    - restart networkmanager
+  tags:
+    - dnsmasq
+
+- meta: flush_handlers
+
+- name: add dnsmasq to /etc/resolv.conf
+  copy:
+    dest: /etc/resolv.conf
+    content: "search {{ consul_dns_domain }} node.{{ consul_dns_domain }}\nnameserver 127.0.0.1\n"
+  tags:
+    - dnsmasq
+
+- name: set appropriate hostname
+  hostname: 
+    name: "{{ hostname }}"
+  tags:
+    - dnsmasq
+
+- name: update hosts file
+  template:
+    src: etc/hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - dnsmasq

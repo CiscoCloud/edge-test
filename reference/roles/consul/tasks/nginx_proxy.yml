@@ -1,0 +1,16 @@
+---
+- name: allow consul http port in selinux
+  command: semanage port -a -t http_port_t  -p tcp 8500
+  ignore_errors: true
+  tags:
+    - consul
+
+- name: configure consul proxy
+  sudo: yes
+  template:
+    src: etc/nginx/conf.d/consul.conf.j2
+    dest: /etc/nginx/conf.d/consul.conf
+  notify:
+    - restart nginx
+  tags:
+    - consul

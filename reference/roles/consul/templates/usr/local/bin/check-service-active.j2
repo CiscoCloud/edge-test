@@ -8,7 +8,7 @@ usage() {
 }
 
 check() {
-{% if ansible_distribution == 'CentOS' %}
+{% if ansible_os_family == 'RedHat' %}
     systemctl is-active "$1" && exit 0 || exit 2
 {% else %}
     service "$1" status && exit 0 || exit 2

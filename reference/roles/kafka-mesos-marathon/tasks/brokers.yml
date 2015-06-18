@@ -1,0 +1,32 @@
+---
+- name: get kafka-mesos app status
+  run_once: true
+  command: "curl -X GET http://localhost:{{ marathon_port }}/v2/apps/{{ kafka_mesos_id }}"
+  register: kafka_mesos_app_json
+  until: "'host' in kafka_mesos_app_json.stdout"
+  retries: 2
+  delay: 5
+  tags:
+    - kafka-mesos-marathon-brokers
+
+- name: register kafka-mesos app status as fact
+  set_fact: 
+    kafka_mesos_status: "{{ kafka_mesos_app_json.stdout|from_json }}"
+  tags:
+    - kafka-mesos-marathon-brokers
+
+- name: add kafka brokers
+  run_once: true
+  command: "curl -X GET http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/add?id={{ item }}&cpus={{ kafka_mesos_brokers_cpus }}&mem={{ kafka_mesos_brokers_mem }}&heap={{ kafka_mesos_brokers_heap }}"
+  with_items: kafka_mesos_brokers
+  changed_when: false
+  tags:
+    - kafka-mesos-marathon-brokers
+
+- name: start kafka brokers
+  run_once: true
+  command: "curl -X GET http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/start?id={{ item }}"
+  with_items: kafka_mesos_brokers
+  changed_when: false
+  tags:
+    - kafka-mesos-marathon-brokers

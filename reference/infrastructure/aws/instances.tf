@@ -13,6 +13,10 @@ resource "aws_instance" "exhibitor_zone_a" {
   subnet_id = "${aws_subnet.zone_a_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.exhibitors,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -33,6 +37,10 @@ resource "aws_instance" "exhibitor_zone_b" {
   subnet_id = "${aws_subnet.zone_b_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.exhibitors,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -52,6 +60,10 @@ resource "aws_instance" "exhibitor_zone_c" {
 
   subnet_id = "${aws_subnet.zone_c_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
+
+  root_block_device {
+    volume_size = "${lookup(var.exhibitors,"volume_size")}"
+  }
 
   associate_public_ip_address = true
 
@@ -75,6 +87,10 @@ resource "aws_instance" "mesos_master_zone_a" {
   subnet_id = "${aws_subnet.zone_a_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.mesos_masters,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -95,6 +111,10 @@ resource "aws_instance" "mesos_master_zone_b" {
   subnet_id = "${aws_subnet.zone_b_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.mesos_masters,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -114,6 +134,10 @@ resource "aws_instance" "mesos_master_zone_c" {
 
   subnet_id = "${aws_subnet.zone_c_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
+
+  root_block_device {
+    volume_size = "${lookup(var.mesos_masters,"volume_size")}"
+  }
 
   associate_public_ip_address = true
 
@@ -138,6 +162,10 @@ resource "aws_instance" "mesos_slave_zone_a" {
   subnet_id = "${aws_subnet.zone_a_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.mesos_slaves,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -158,6 +186,10 @@ resource "aws_instance" "mesos_slave_zone_b" {
   subnet_id = "${aws_subnet.zone_b_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
 
+  root_block_device {
+    volume_size = "${lookup(var.mesos_slaves,"volume_size")}"
+  }
+
   associate_public_ip_address = true
 
   tags {
@@ -177,6 +209,10 @@ resource "aws_instance" "mesos_slave_zone_c" {
 
   subnet_id = "${aws_subnet.zone_c_public.id}"
   security_groups = ["${aws_security_group.clusterwide.id}"]
+
+  root_block_device {
+    volume_size = "${lookup(var.mesos_slaves,"volume_size")}"
+  }
 
   associate_public_ip_address = true
 

@@ -2,7 +2,7 @@
   "datacenter": "{{ consul_dc }}",
   "bind_addr": "{{ consul_bind }}",
   "advertise_addr": "{{ consul_advertise }}",
-  "node_name": "{{ inventory_hostname }}",
+  "node_name": "{{ ansible_hostname }}",
   "rejoin_after_leave": true,
   "domain": "{{ consul_dns_domain }}",
 {% if consul_bootstrap_expect > 1 %}
@@ -15,7 +15,7 @@
 {% if consul_gossip_key is defined %}
   "encrypt": "{{ consul_gossip_key }}",
 {% endif %}
-{% if consul_ssl %}
+{% if consul_do_ssl %}
   "ca_file": "/etc/consul/ssl/{{ consul_ca_file }}",
   "cert_file": "/etc/consul/ssl/{{ consul_cert_file }}",
   "key_file": "/etc/consul/ssl/{{ consul_key_file }}",

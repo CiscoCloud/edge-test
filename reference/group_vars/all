@@ -1,4 +1,9 @@
 # Service discovery
-cluster: "dev_cluster"
-datacenter: "{{ ec2_placement }}"
+cluster: "dev-cluster"
+datacenter: "{{ cluster }}"
 consul_dc: "{{ datacenter }}"
+
+# Security
+consul_do_ssl: no
+consul_do_acl: no
+consul_do_auth: no

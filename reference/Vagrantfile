@@ -40,30 +40,35 @@ nodes.default = {
     :bootstrap => ['/bin/true']
 }
 
+# Port forwarding
+ports = [ 2181,2888,3888,5050,5051,6066,7000,7001,7077,7199,8080,8081,9042,9090,9092,9160 ]
+
 # Ansible provisioner config
 ansible_provision = Proc.new do |ansible|
   ansible.playbook = "vagrant.yml"
-  #ansible.verbose = 'vvvv'
+  #ansible.verbose = "vvvv"
   ansible.groups = {
-    "vagrant"                => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
-    "dc_vagrant:children"    => ['vagrant'],
-    "consul-server:children" => ['vagrant'],
-    "zookeeper:children"     => ['vagrant'],
-    "exhibitor:children"     => ['vagrant'],
-    "mesos-master:children"  => ['vagrant'],
-    "mesos-slave:children"   => ['vagrant']
+    "vagrant"                 => (1..NGENERIC).map {|id| "el#{id.to_s.rjust(4,'0')}"},
+    "dc-vagrant:children"     => ['vagrant'],
+    "consul-servers:children" => ['vagrant'],
+    "zookeepers:children"     => ['vagrant'],
+    "exhibitors:children"     => ['vagrant'],
+    "mesos-masters:children"  => ['vagrant'],
+    "mesos-slaves:children"   => ['vagrant']
   }
   ansible.extra_vars = {
     cluster: "vagrant",
-    datacenter: "dc_vagrant",
+    datacenter: "dc-vagrant",
     consul_is_server: "yes",
     mesos_mode: "both"
   }
+  ansible.limit = "all"
 end
 
 # -------------
 # Vagrant magic
 Vagrant.configure('2') do |config|
+    config.ssh.insert_key = false
 
     # Generic nodes
     (1..NGENERIC).each do |id|
@@ -78,6 +83,10 @@ Vagrant.configure('2') do |config|
             config.vm.network :private_network,
                 ip: nodes[node_name][:network].to_s.empty? ? "#{nodes.default[:network]}.#{10+id}" : "#{nodes[node_name][:network]}.#{10+id}",
                 netmask: nodes[node_name][:netmask].to_s.empty? ? nodes.default[:netmask] : nodes[node_name][:netmask]
+
+            ports.each do |port|
+                config.vm.network :forwarded_port, guest: port, host: "#{port+20000+id}"
+            end
 
             config.vm.provider :virtualbox do |vb|
                 vb.name = node_name + "_#{Time.now.to_i}"

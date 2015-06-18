@@ -4,8 +4,11 @@
   sudo: True
   roles:
     - common
+    - dnsmasq
     - consul
+    - consul-template
     - zookeeper
     - mesos
+    - marathon
   vars:
      cluster: 'vagrant'

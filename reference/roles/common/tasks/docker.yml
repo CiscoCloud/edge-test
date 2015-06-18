@@ -1,0 +1,11 @@
+---
+- name: configure docker consul dns
+  lineinfile:
+    dest: /etc/sysconfig/docker-network
+    regexp: ^DOCKER_NETWORK_OPTIONS
+    line: DOCKER_NETWORK_OPTIONS='--dns {{ ansible_default_ipv4.address }}'
+    state: present
+  notify:
+    - restart docker
+  tags:
+    - common

@@ -1,5 +1,7 @@
 ---
-
 - include: packages.yml
 - include: golang.yml
-- include: hosts.yml
+- include: docker.yml
+- include: nginx.yml
+
+- meta: flush_handlers

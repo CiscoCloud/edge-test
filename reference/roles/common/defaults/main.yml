@@ -1,10 +1,14 @@
+---
 common_packages:
+  - curl
+  - nc
   - unzip
   - git
   - mercurial
+  - docker
 
 common_deb_packages:
-  - oracle-java7-installer
+  - oracle-java8-installer
 
 common_rpm_packages:
-  - java-1.7.0-openjdk
+  - java-1.8.0-openjdk

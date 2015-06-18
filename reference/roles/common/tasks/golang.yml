@@ -1,10 +1,11 @@
 ---
-
 - name: download golang package
   get_url: 
     url: "https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
     dest: /opt/go1.4.2.linux-amd64.tar.gz
   register: package
+  tags:
+    - common
 
 - name: extract golang package
   unarchive: 
@@ -12,6 +13,8 @@
     dest: /opt
     copy: no
   when: package.changed
+  tags:
+    - common
 
 - name: set golang GOROOT environment variable
   lineinfile:
@@ -19,6 +22,8 @@
     regexp: "^export GOROOT="
     dest: /root/.bashrc
     state: present
+  tags:
+    - common
 
 - name: add golang to PATH environment variable
   lineinfile:
@@ -26,3 +31,5 @@
     regexp: "^export PATH=/opt/go/bin"
     dest: /root/.bashrc
     state: present
+  tags:
+    - common

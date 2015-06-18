@@ -1,4 +1,8 @@
-Pre-configuration
+
+# Terraform-ation for infrastructure
+Hashicorp Terraform version >= 0.5.1 is required
+
+### Pre-configuration
 ```
 export AWS_ACCESS_KEY_ID='YOUR_AWS_API_KEY'
 export AWS_SECRET_ACCESS_KEY='YOUR_AWS_API_SECRET_KEY'
@@ -10,18 +14,20 @@ terraform remote config -backend=S3 \
  -backend-config="key=tf-state" \
  -backend-config="region=us-west-1"
 ```
+If you're expected to be the only person managing an infrastructure, you don't have to perform a remote config, so you can proceed directly to deployment step.
 
+### Deployment to AWS
+Pretty much everything that you might want to tweak resides in deployment.tf file. It's self-explanatory.
+Use it wisely, as Terraform is kinda gentle, and barely has some human-related errors prevention mechanism.
+```
 cd aws
 
-./terraform plan -input=false # Use default variables
-./terraform apply -input=false
-
-cd ../../
-ansible-playbook site.yml --extra-vars="cluster=dev_cluster"
-
+terraform plan -input=false # Use default variables
+terraform apply -input=false
 ```
+Give cluster a few minutes to spin up.
 
-When the work is done, tear down the cluster
+### Tearing down the cluster
 ```
 terraform destroy -input=false
 ```

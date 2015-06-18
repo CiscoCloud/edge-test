@@ -6,19 +6,5 @@
   with_items:
     - src: usr/lib/systemd/system/consul.service
       dest: /usr/lib/systemd/system/consul.service
-  when: ansible_distribution == 'CentOS'
-  tags:
-    - consul
-
-- name: register service with upstart
-  copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-  with_items:
-    - src: etc/default/consul
-      dest: /etc/default/consul
-    - src: etc/init/consul.conf
-      dest: /etc/init/consul.conf
-  when: ansible_distribution == 'Ubuntu'
   tags:
     - consul

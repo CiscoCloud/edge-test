@@ -73,7 +73,7 @@
       dest: /etc/consul/ssl/{{ consul_cert_file }}
     - src: etc/consul/ssl/private/consul.key.pem
       dest: /etc/consul/ssl/{{ consul_key_file }}
-  when: consul_ssl
+  when: consul_do_ssl
   notify:
     - restart consul
   tags:
@@ -117,11 +117,10 @@
   tags:
     - consul
 
-- meta: flush_handlers
-
 # Give consul time to elect a leader
 - name: wait for leader
   command: /usr/local/bin/consul-wait-for-leader.sh
+  register: leader_status
   tags:
     - consul
 
@@ -132,3 +131,5 @@
   when: not consul_do_acl
 
 - meta: flush_handlers
+
+- include: nginx_proxy.yml

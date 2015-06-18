@@ -1,7 +1,7 @@
 # Placement config
 
 variable "region" {
-  default = "us-east-1"
+  default = "us-west-2"
 }
 
 # This is not a counter, it's rather a switch
@@ -10,42 +10,45 @@ variable "region" {
 
 variable "availability_zones" {
   default = {
-    us-east-1a = 1 
-    us-east-1b = 1
-    us-east-1c = 1
+    us-west-2a = 1 
+    us-west-2b = 1
+    us-west-2c = 1
   }
 }
 
 # Cluster config
 
 variable "cluster_name" {
-  default = "dev_cluster"
+  default = "dev-cluster"
 }
 
 variable "mesos_masters" {
   default = {
-    instance_type = "t2.small"
-    us-east-1a = 2
-    us-east-1b = 2
-    us-east-1c = 1
+    instance_type = "c3.2xlarge"
+    volume_size = "50"
+    us-west-2a = 1
+    us-west-2b = 1
+    us-west-2c = 1
   }
 }
 
 variable "mesos_slaves" {
   default = {
-    instance_type = "t2.small"
-    us-east-1a = 1
-    us-east-1b = 1
-    us-east-1c = 1
+    instance_type = "c3.2xlarge"
+    volume_size = "200"
+    us-west-2a = 4
+    us-west-2b = 4
+    us-west-2c = 4
   }
 }
 
 variable "exhibitors" {
   default = {
-    instance_type = "t2.small"
-    us-east-1a = 1
-    us-east-1b = 1
-    us-east-1c = 1
+    instance_type = "c3.2xlarge"
+    volume_size = "50"
+    us-west-2a = 1
+    us-west-2b = 1
+    us-west-2c = 1
   }
 }
 
@@ -61,13 +64,13 @@ variable "key_name" {
 
 variable "amis" {
   default = {
-    # Ubuntu 14.04 HVM/EBS
-    us-east-1 = "ami-7eb2a716" 
-    us-west-1 = "ami-9b7f90df"
-    us-west-2 = "ami-3389b803"
+    # CentOS 7 HVM/EBS
+    us-east-1 = "ami-96a818fe" 
+    us-west-1 = "ami-6bcfc42e"
+    us-west-2 = "ami-c7d092f7"
   }
 }
 
 variable "ingress_tcp_ports" {
-  default = "22,2181,2888,3888,5050,5051,6066,7000,7001,7077,7199,8080,8081,9042,9090,9092,9160"
+  default = "22,2181,2888,3888,5050,5051,6066,7000,7001,7077,7199,8080,8081,9042,9090,9092,9160,18080"
 }

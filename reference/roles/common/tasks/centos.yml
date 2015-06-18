@@ -1,10 +1,17 @@
 ---
+- name: add epel repo
+  yum:
+    name: epel-release
+    state: present
+  tags:
+    - common 
 
 - name: add mesosphere repo
-  sudo: yes
   yum:
-    name:  http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
+    name: http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
     state: present
+  tags:
+    - common
 
 - name: install common packages
   yum:
@@ -13,4 +20,5 @@
   with_items:
     - "{{ common_packages }}"
     - "{{ common_rpm_packages }}"
-
+  tags:
+    - common
