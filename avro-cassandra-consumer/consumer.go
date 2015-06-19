@@ -96,19 +96,12 @@ func (this *AvroCassandraConsumer) Start() {
 		}
 	}()
 	this.consumer.StartStatic(topicMap)
-    this.cassandraSession.Close()
+	this.cassandraSession.Close()
 }
 
 func (this *AvroCassandraConsumer) Stop() <-chan bool {
 	this.shuttingDown = true
-    closed := make(chan bool)
-    go func() {
-        <-this.consumer.Close()
-        this.cassandraSession.Close()
-        closed <- true
-    }()
-
-	return closed
+	return this.consumer.Close()
 }
 
 func (this *AvroCassandraConsumer) String() string {
