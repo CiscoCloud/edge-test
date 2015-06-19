@@ -32,7 +32,7 @@
     - key: event_subscriber
       value: http_callback
     - key: hostname
-      value: "{{ ansible_hostname }}"
+      value: "{{ inventory_hostname }}"
     - key: webui_url
       value: http://{{ inventory_hostname }}:{{ marathon_port }}
   notify:
