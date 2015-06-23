@@ -57,7 +57,7 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 			updateValues := make([]string, 0)
 			fields := decodedMessage.Schema().(*avro.RecordSchema).Fields
 			for _, field := range fields {
-				updateValues = append(updateValues, fmt.Sprintf("%s = %s", field.Name, MapToCassandraValue(decodedMessage.Get(field.Name))))
+				updateValues = append(updateValues, fmt.Sprintf("%s = %s", field.Name, mapToCassandraValue(decodedMessage.Get(field.Name))))
 			}
 			updateClause := strings.Join(updateValues, ",")
 			for tableSuffix, id := range compositeKey {
@@ -162,7 +162,7 @@ func (this *AvroCassandraConsumer) String() string {
 	return fmt.Sprintf("ac-consumer")
 }
 
-func MapToCassandraValue(obj interface{}) string {
+func mapToCassandraValue(obj interface{}) string {
 	v := reflect.ValueOf(obj)
 	t := reflect.TypeOf(obj)
 	switch v.Kind() {
@@ -187,8 +187,8 @@ func MapToCassandraValue(obj interface{}) string {
 			result := make([]string, v.Len())
 			keys := v.MapKeys()
 			for i := 0; i < v.Len(); i++ {
-				result[i] = fmt.Sprintf("%s: %s", MapToCassandraValue(keys[i].Interface()),
-					MapToCassandraValue(v.MapIndex(keys[i]).Interface()))
+				result[i] = fmt.Sprintf("%s: %s", mapToCassandraValue(keys[i].Interface()),
+					mapToCassandraValue(v.MapIndex(keys[i]).Interface()))
 			}
 
 			return fmt.Sprintf("{%s}", strings.Join(result, ", "))
@@ -197,7 +197,7 @@ func MapToCassandraValue(obj interface{}) string {
 		{
 			result := make([]string, v.Len())
 			for i := 0; i < v.Len(); i++ {
-				result[i] = MapToCassandraValue(v.Index(i).Interface())
+				result[i] = mapToCassandraValue(v.Index(i).Interface())
 			}
 
 			return fmt.Sprintf("[%s]", strings.Join(result, ", "))
@@ -206,7 +206,7 @@ func MapToCassandraValue(obj interface{}) string {
 		{
 			result := make([]string, t.NumField())
 			for i := 0; i < t.NumField(); i++ {
-				result[i] = MapToCassandraValue(v.Field(i).Interface())
+				result[i] = mapToCassandraValue(v.Field(i).Interface())
 			}
 
 			return fmt.Sprintf("(%s)", strings.Join(result, ", "))
