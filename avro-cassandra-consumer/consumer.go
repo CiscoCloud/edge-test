@@ -65,18 +65,19 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 				insertQuery := fmt.Sprintf("UPDATE events_by_%s SET %s WHERE id = '%s' and time = dateof(now())", tableSuffix, updateClause, id)
 				err := acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec()
 				if err != nil {
+					kafka.Warnf(acConsumer, "Table events_by_%s does not exist yet. Trying to create one...", tableSuffix)
 					fieldMappings := make([]string, 0)
 					for _, field := range fields {
 						fieldMappings = append(fieldMappings, fmt.Sprintf("%s %s", field.Name, mapType(field.Type)))
 					}
 
-					kafka.Errorf(acConsumer, "%v", fieldMappings)
 					createQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS events_by_%s(id text, time bigint,  %s, PRIMARY KEY(id, time)) WITH CLUSTERING ORDER BY (time DESC)",
 						tableSuffix, strings.Join(fieldMappings, ","))
 					if err = acConsumer.cassandraSession.Query(createQuery).Exec(); err != nil {
 						kafka.Errorf(acConsumer, "Error executing query %s due to: %s", createQuery, err.Error())
 						return kafka.NewProcessingFailedResult(taskId)
 					}
+					kafka.Infof(acConsumer, "Successfully created events_by_%s table", tableSuffix)
 
 					if err = acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec(); err != nil {
 						kafka.Errorf(acConsumer, "Error executing query %s due to: %s", insertQuery, err.Error())
