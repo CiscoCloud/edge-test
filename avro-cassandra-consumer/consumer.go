@@ -6,6 +6,7 @@ import (
 	avro "github.com/stealthly/go-avro"
 	kafka "github.com/stealthly/go_kafka_client"
 	"log"
+	"reflect"
 	"strings"
 	"sync"
 )
@@ -53,22 +54,20 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 				compositeKey[strings.Join(keys, "_")] = strings.Join(values, "|")
 			}
 
-			updateFieldBits := make([]string, 0)
-			updateValues := make([]interface{}, 0)
+			updateValues := make([]string, 0)
 			fields := decodedMessage.Schema().(*avro.RecordSchema).Fields
 			for _, field := range fields {
-				updateFieldBits = append(updateFieldBits, fmt.Sprintf("%s = ?", field.Name))
-				updateValues = append(updateValues, decodedMessage.Get(field.Name))
+				updateValues = append(updateValues, fmt.Sprintf("%s = %s", field.Name, MapToCassandraValue(decodedMessage.Get(field.Name))))
 			}
-			updateClause := strings.Join(updateFieldBits, ",")
+			updateClause := strings.Join(updateValues, ",")
 			for tableSuffix, id := range compositeKey {
-				insertQuery := fmt.Sprintf("UPDATE events_by_%s SET %s WHERE id = '%s' and time = dateof(now())", tableSuffix, updateClause, id)
-				err := acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec()
+				insertQuery := fmt.Sprintf("UPDATE events_by_%s SET %v WHERE id = '%s' and time = dateof(now())", tableSuffix, updateClause, id)
+				err := acConsumer.cassandraSession.Query(insertQuery).Exec()
 				if err != nil {
 					kafka.Warnf(acConsumer, "Table events_by_%s does not exist yet. Trying to create one...", tableSuffix)
 					fieldMappings := make([]string, 0)
 					for _, field := range fields {
-						fieldMappings = append(fieldMappings, fmt.Sprintf("%s %s", field.Name, mapType(field.Type)))
+						fieldMappings = append(fieldMappings, fmt.Sprintf("%s %s", field.Name, mapToCassandraType(field.Type)))
 					}
 
 					createQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS events_by_%s(id text, time bigint,  %s, PRIMARY KEY(id, time)) WITH CLUSTERING ORDER BY (time DESC)",
@@ -79,7 +78,7 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 					}
 					kafka.Infof(acConsumer, "Successfully created events_by_%s table", tableSuffix)
 
-					if err = acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec(); err != nil {
+					if err = acConsumer.cassandraSession.Query(insertQuery).Exec(); err != nil {
 						kafka.Errorf(acConsumer, "Error executing query %s due to: %s", insertQuery, err.Error())
 						return kafka.NewProcessingFailedResult(taskId)
 					}
@@ -122,12 +121,12 @@ func (this *AvroCassandraConsumer) Start() {
 	this.cassandraSession.Close()
 }
 
-func mapType(fieldType avro.Schema) string {
+func mapToCassandraType(fieldType avro.Schema) string {
 	switch fieldType.Type() {
 	case avro.Array:
-		return fmt.Sprintf("list<%s>", mapType(fieldType.(*avro.ArraySchema).Items))
+		return fmt.Sprintf("list<%s>", mapToCassandraType(fieldType.(*avro.ArraySchema).Items))
 	case avro.Map:
-		return fmt.Sprintf("map<text, %s>", mapType(fieldType.(*avro.MapSchema).Values))
+		return fmt.Sprintf("map<text, %s>", mapToCassandraType(fieldType.(*avro.MapSchema).Values))
 	case avro.String:
 		return "text"
 	case avro.Bytes:
@@ -143,11 +142,11 @@ func mapType(fieldType avro.Schema) string {
 	case avro.Boolean:
 		return "boolean"
 	case avro.Union:
-		return mapType(fieldType.(*avro.UnionSchema).Types[1])
+		return mapToCassandraType(fieldType.(*avro.UnionSchema).Types[1])
 	case avro.Record:
 		result := make([]string, 0)
 		for _, field := range fieldType.(*avro.RecordSchema).Fields {
-			result = append(result, mapType(field.Type))
+			result = append(result, mapToCassandraType(field.Type))
 		}
 		return fmt.Sprintf("<tuple<%s>>", strings.Join(result, ", "))
 	}
@@ -161,4 +160,58 @@ func (this *AvroCassandraConsumer) Stop() <-chan bool {
 
 func (this *AvroCassandraConsumer) String() string {
 	return fmt.Sprintf("ac-consumer")
+}
+
+func MapToCassandraValue(obj interface{}) string {
+	v := reflect.ValueOf(obj)
+	t := reflect.TypeOf(obj)
+	switch v.Kind() {
+	case reflect.String:
+		return fmt.Sprintf("'%v'", v.Interface())
+	case reflect.Bool:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Int:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Int16:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Int32:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Int64:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Float32:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Float64:
+		return fmt.Sprintf("%v", v.Interface())
+	case reflect.Map:
+		{
+			result := make([]string, v.Len())
+			keys := v.MapKeys()
+			for i := 0; i < v.Len(); i++ {
+				result[i] = fmt.Sprintf("%s: %s", MapToCassandraValue(keys[i].Interface()),
+					MapToCassandraValue(v.MapIndex(keys[i]).Interface()))
+			}
+
+			return fmt.Sprintf("{%s}", strings.Join(result, ", "))
+		}
+	case reflect.Array:
+		{
+			result := make([]string, v.Len())
+			for i := 0; i < v.Len(); i++ {
+				result[i] = MapToCassandraValue(v.Index(i).Interface())
+			}
+
+			return fmt.Sprintf("[%s]", strings.Join(result, ", "))
+		}
+	case reflect.Struct:
+		{
+			result := make([]string, t.NumField())
+			for i := 0; i < t.NumField(); i++ {
+				result[i] = MapToCassandraValue(v.Field(i).Interface())
+			}
+
+			return fmt.Sprintf("(%s)", strings.Join(result, ", "))
+		}
+	}
+
+	panic(fmt.Sprintf("Unsupported data type: %v", v.Kind()))
 }
