@@ -144,9 +144,15 @@ func mapType(fieldType avro.Schema) string {
 		return "boolean"
 	case avro.Union:
 		return mapType(fieldType.(*avro.UnionSchema).Types[1])
+	case avro.Record:
+		result := make([]string, 0)
+		for _, field := range fieldType.(*avro.RecordSchema).Fields {
+			result = append(result, mapType(field.Type))
+		}
+		return fmt.Sprintf("<tuple<%s>>", strings.Join(result, ", "))
 	}
 
-	panic(fmt.Sprintf("Unknown type: %s", fieldType.GetName()))
+	panic(fmt.Sprintf("Unsupported type: %s", fieldType.GetName()))
 }
 
 func (this *AvroCassandraConsumer) Stop() <-chan bool {
