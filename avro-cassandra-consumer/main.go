@@ -2,12 +2,11 @@ package main
 
 import (
 	"flag"
+	kafka "github.com/stealthly/go_kafka_client"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
-	"time"
-    kafka "github.com/stealthly/go_kafka_client"
 )
 
 var flags = flag.NewFlagSet("Kafka Avro Consumer", flag.ExitOnError)
@@ -18,14 +17,13 @@ var numStreams = flags.Int("num.streams", 1, "Amount of streams for each topic")
 var group = flags.String("group", "ac-consumer", "Kafka consumer group name")
 var zkConnect = flags.String("zookeeper", "", "Zookeeper connection string: --zookeeper [host:port]")
 var schemaRegistryUrl = flags.String("schema.registry.url", "", "Avro Schema Registry URL: --schema.registry.url http://[host:port]")
-var updateInterval = flags.Duration("update.interval", 1 * time.Second, "Interval at which Cassandra should be updated")
 var logLevel = flags.String("log.level", "info", "Log level")
 
 func main() {
 	flags.Parse(os.Args[1:])
-    if logLevel != nil {
-        setLogLevel(*logLevel)
-    }
+	if logLevel != nil {
+		setLogLevel(*logLevel)
+	}
 	if *cassandraHost == "" {
 		log.Fatal("You have to provide Cassandra host: --cassandra.host [host]")
 	}
@@ -47,7 +45,6 @@ func main() {
 		Group:             *group,
 		ZkConnect:         strings.Split(*zkConnect, ","),
 		SchemaRegistryUrl: *schemaRegistryUrl,
-		UpdateInterval:    *updateInterval,
 	}
 	acConsumer := NewAvroCassandraConsumer(&config)
 
@@ -62,22 +59,22 @@ func main() {
 }
 
 func setLogLevel(logLevel string) {
-    var level kafka.LogLevel
-    switch strings.ToLower(logLevel) {
-        case "trace":
-        level = kafka.TraceLevel
-        case "debug":
-        level = kafka.DebugLevel
-        case "info":
-        level = kafka.InfoLevel
-        case "warn":
-        level = kafka.WarnLevel
-        case "error":
-        level = kafka.ErrorLevel
-        case "critical":
-        level = kafka.CriticalLevel
-        default:
-        log.Fatalf("Invalid log level: %s", logLevel)
-    }
-    kafka.Logger = kafka.NewDefaultLogger(level)
+	var level kafka.LogLevel
+	switch strings.ToLower(logLevel) {
+	case "trace":
+		level = kafka.TraceLevel
+	case "debug":
+		level = kafka.DebugLevel
+	case "info":
+		level = kafka.InfoLevel
+	case "warn":
+		level = kafka.WarnLevel
+	case "error":
+		level = kafka.ErrorLevel
+	case "critical":
+		level = kafka.CriticalLevel
+	default:
+		log.Fatalf("Invalid log level: %s", logLevel)
+	}
+	kafka.Logger = kafka.NewDefaultLogger(level)
 }

@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/gocql/gocql"
+	avro "github.com/stealthly/go-avro"
 	kafka "github.com/stealthly/go_kafka_client"
 	"log"
+	"strings"
 	"sync"
-	"time"
 )
 
 type AvroCassandraConsumerConfig struct {
@@ -17,7 +18,6 @@ type AvroCassandraConsumerConfig struct {
 	Topics            []string
 	NumStreams        int
 	Group             string
-	UpdateInterval    time.Duration
 }
 
 type AvroCassandraConsumer struct {
@@ -26,7 +26,6 @@ type AvroCassandraConsumer struct {
 	cassandraSession *gocql.Session
 	batch            *gocql.Batch
 	batchLock        sync.RWMutex
-	shuttingDown     bool
 }
 
 func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandraConsumer {
@@ -39,14 +38,57 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 
 	consumerConfig := kafka.DefaultConsumerConfig()
 	consumerConfig.Groupid = config.Group
+	consumerConfig.AutoOffsetReset = kafka.SmallestOffset
 	consumerConfig.Coordinator = coordinator
 	consumerConfig.ValueDecoder = kafka.NewKafkaAvroDecoder(config.SchemaRegistryUrl)
 	consumerConfig.Strategy = func(worker *kafka.Worker, message *kafka.Message, taskId kafka.TaskId) kafka.WorkerResult {
-		inReadLock(&acConsumer.batchLock, func() {
-			//TODO: finish up the query
-			acConsumer.batch.Query("UPDATE events where ...")
-		})
-		return kafka.NewSuccessfulResult(taskId)
+		if decodedMessage, ok := message.DecodedValue.(*avro.GenericRecord); ok {
+			tags := decodedMessage.Get("tag").(map[string]interface{})
+			compositeKey := make(map[string]string)
+			keys := make([]string, 0)
+			values := make([]string, 0)
+			for key, value := range tags {
+				keys = append(keys, key)
+				values = append(values, value.(string))
+				compositeKey[strings.Join(keys, "_")] = strings.Join(values, "|")
+			}
+
+			updateFieldBits := make([]string, 0)
+			updateValues := make([]interface{}, 0)
+			fields := decodedMessage.Schema().(*avro.RecordSchema).Fields
+			for _, field := range fields {
+				updateFieldBits = append(updateFieldBits, fmt.Sprintf("%s = ?", field.Name))
+				updateValues = append(updateValues, decodedMessage.Get(field.Name))
+			}
+			updateClause := strings.Join(updateFieldBits, ",")
+			for tableSuffix, id := range compositeKey {
+				insertQuery := fmt.Sprintf("UPDATE events_by_%s SET %s WHERE id = '%s' and time = dateof(now())", tableSuffix, updateClause, id)
+				err := acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec()
+				if err != nil {
+					fieldMappings := make([]string, 0)
+					for _, field := range fields {
+						fieldMappings = append(fieldMappings, fmt.Sprintf("%s %s", field.Name, mapType(field.Type)))
+					}
+
+					kafka.Errorf(acConsumer, "%v", fieldMappings)
+					createQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS events_by_%s(id text, time bigint,  %s, PRIMARY KEY(id, time)) WITH CLUSTERING ORDER BY (time DESC)",
+						tableSuffix, strings.Join(fieldMappings, ","))
+					if err = acConsumer.cassandraSession.Query(createQuery).Exec(); err != nil {
+						kafka.Errorf(acConsumer, "Error executing query %s due to: %s", createQuery, err.Error())
+						return kafka.NewProcessingFailedResult(taskId)
+					}
+
+					if err = acConsumer.cassandraSession.Query(insertQuery, updateValues...).Exec(); err != nil {
+						kafka.Errorf(acConsumer, "Error executing query %s due to: %s", insertQuery, err.Error())
+						return kafka.NewProcessingFailedResult(taskId)
+					}
+				}
+			}
+
+			return kafka.NewSuccessfulResult(taskId)
+		}
+
+		return kafka.NewProcessingFailedResult(taskId)
 	}
 	consumerConfig.WorkerFailureCallback = func(wm *kafka.WorkerManager) kafka.FailedDecision {
 		kafka.Error(acConsumer, "Failed to write critical amount of messages into Cassandra. Shutting down...")
@@ -75,49 +117,41 @@ func (this *AvroCassandraConsumer) Start() {
 	for _, topic := range this.config.Topics {
 		topicMap[topic] = this.config.NumStreams
 	}
-
-	go func() {
-		for !this.shuttingDown {
-			<-time.After(this.config.UpdateInterval)
-			inWriteLock(&this.batchLock, func() {
-				if this.batch.Size() == 0 {
-					kafka.Debug(this, "Batch is empty")
-					return
-				}
-
-				kafka.Debug(this, "Trying to update Cassandra")
-				if err := this.cassandraSession.ExecuteBatch(this.batch); err != nil {
-					log.Fatalf("Failed to update Cassandra: %s", err.Error())
-				}
-				kafka.Debugf(this, "Successfully updated Cassandra with %d values", this.batch.Size())
-
-				this.batch = this.cassandraSession.NewBatch(gocql.LoggedBatch)
-			})
-		}
-	}()
 	this.consumer.StartStatic(topicMap)
 	this.cassandraSession.Close()
 }
 
+func mapType(fieldType avro.Schema) string {
+	switch fieldType.Type() {
+	case avro.Array:
+		return fmt.Sprintf("list<%s>", mapType(fieldType.(*avro.ArraySchema).Items))
+	case avro.Map:
+		return fmt.Sprintf("map<text, %s>", mapType(fieldType.(*avro.MapSchema).Values))
+	case avro.String:
+		return "text"
+	case avro.Bytes:
+		return "blob"
+	case avro.Int:
+		return "int"
+	case avro.Long:
+		return "bigint"
+	case avro.Float:
+		return "float"
+	case avro.Double:
+		return "double"
+	case avro.Boolean:
+		return "boolean"
+	case avro.Union:
+		return mapType(fieldType.(*avro.UnionSchema).Types[1])
+	}
+
+	panic(fmt.Sprintf("Unknown type: %s", fieldType.GetName()))
+}
+
 func (this *AvroCassandraConsumer) Stop() <-chan bool {
-	this.shuttingDown = true
 	return this.consumer.Close()
 }
 
 func (this *AvroCassandraConsumer) String() string {
 	return fmt.Sprintf("ac-consumer")
-}
-
-func inReadLock(lock *sync.RWMutex, fun func()) {
-	lock.RLock()
-	defer lock.RUnlock()
-
-	fun()
-}
-
-func inWriteLock(lock *sync.RWMutex, fun func()) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	fun()
 }
