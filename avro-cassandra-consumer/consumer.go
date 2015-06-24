@@ -61,11 +61,8 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 				compositeKey[strings.Join(keys, "_")] = strings.Join(values, "|")
 			}
 
-			updateValues := make([]string, 0)
 			fields := decodedMessage.Schema().(*avro.RecordSchema).Fields
-			for _, field := range fields {
-				updateValues = append(updateValues, fmt.Sprintf("%s = %s", field.Name, mapToCassandraValue(decodedMessage.Get(field.Name))))
-			}
+			updateValues := extractValues(decodedMessage)
 			updateClause := strings.Join(updateValues, ",")
 			for tableSuffix, id := range compositeKey {
 				insertQuery := fmt.Sprintf("UPDATE events_by_%s SET %v WHERE id = '%s' and time = dateof(now())", tableSuffix, updateClause, id)
@@ -174,16 +171,39 @@ func mapToCassandraType(fieldType avro.Schema) string {
 		for _, field := range fieldType.(*avro.RecordSchema).Fields {
 			result = append(result, mapToCassandraType(field.Type))
 		}
-		return fmt.Sprintf("<tuple<%s>>", strings.Join(result, ", "))
+		return fmt.Sprintf("frozen<tuple<%s>>", strings.Join(result, ", "))
 	}
 
 	panic(fmt.Sprintf("Unsupported type: %s", fieldType.GetName()))
+}
+
+func extractValues(record *avro.GenericRecord) []string {
+	extractedValues := make([]string, 0)
+	fields := record.Schema().(*avro.RecordSchema).Fields
+	for _, field := range fields {
+		extractedValues = append(extractedValues, fmt.Sprintf("%s = %s", field.Name, mapToCassandraValue(record.Get(field.Name))))
+	}
+
+	return extractedValues
 }
 
 func mapToCassandraValue(obj interface{}) string {
 	v := reflect.ValueOf(obj)
 	t := reflect.TypeOf(obj)
 	switch v.Kind() {
+	case reflect.Ptr: {
+		if record, ok := v.Elem().Interface().(avro.GenericRecord); ok {
+			result := make([]string, 0)
+			fields := record.Schema().(*avro.RecordSchema).Fields
+			for _, field := range fields {
+				result = append(result, mapToCassandraValue(record.Get(field.Name)))
+			}
+
+			return fmt.Sprintf("(%s)", strings.Join(result, ", "))
+		} else {
+			return mapToCassandraValue(v.Elem().Interface())
+		}
+	}
 	case reflect.String:
 		return fmt.Sprintf("'%v'", v.Interface())
 	case reflect.Map:
@@ -215,7 +235,8 @@ func mapToCassandraValue(obj interface{}) string {
 
 			return fmt.Sprintf("(%s)", strings.Join(result, ", "))
 		}
-	default:
+	default:{
 		return fmt.Sprintf("%v", v.Interface())
+	}
 	}
 }
