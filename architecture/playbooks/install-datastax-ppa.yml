@@ -1,9 +1,0 @@
----
-- name: Install Datastax PPA
-  hosts: tag_exhibitor_True
-  sudo: True
-  tasks:
-    - name: add datastax repository key
-      apt_key: url='http://debian.datastax.com/debian/repo_key'
-    - name: add datastax repository
-      apt_repository: repo='deb http://debian.datastax.com/community stable main' state=present

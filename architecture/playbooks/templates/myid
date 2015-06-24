@@ -1,1 +1,0 @@
-{% for host in groups['tag_exhibitor_True'] %}{% if hostvars[host].ansible_fqdn == ansible_fqdn %}{{ loop.index0 }}{% endif %}{% endfor %}
