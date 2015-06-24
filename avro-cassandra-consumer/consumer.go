@@ -41,7 +41,6 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 
 	consumerConfig := kafka.DefaultConsumerConfig()
 	consumerConfig.Groupid = config.Group
-	consumerConfig.AutoOffsetReset = kafka.SmallestOffset
 	consumerConfig.Coordinator = coordinator
 	consumerConfig.ValueDecoder = kafka.NewKafkaAvroDecoder(config.SchemaRegistryUrl)
 	consumerConfig.Strategy = func(worker *kafka.Worker, message *kafka.Message, taskId kafka.TaskId) kafka.WorkerResult {
