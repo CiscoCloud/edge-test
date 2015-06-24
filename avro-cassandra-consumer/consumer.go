@@ -168,7 +168,8 @@ func mapToCassandraValue(obj interface{}) string {
 	switch v.Kind() {
 	case reflect.String:
 		return fmt.Sprintf("'%v'", v.Interface())
-	case reflect.Bool|reflect.Int|reflect.Int16|reflect.Int32|reflect.Int64|reflect.Float32|reflect.Float64:
+	case reflect.Bool | reflect.Int | reflect.Int16 | reflect.Int32 | reflect.Int64 | reflect.Float32 | reflect.Float64 |
+		reflect.Uint | reflect.Uint16 | reflect.Uint32 | reflect.Uint64:
 		return fmt.Sprintf("%v", v.Interface())
 	case reflect.Map:
 		{
@@ -181,7 +182,7 @@ func mapToCassandraValue(obj interface{}) string {
 
 			return fmt.Sprintf("{%s}", strings.Join(result, ", "))
 		}
-	case reflect.Array|reflect.Slice:
+	case reflect.Array | reflect.Slice:
 		{
 			result := make([]string, v.Len())
 			for i := 0; i < v.Len(); i++ {
