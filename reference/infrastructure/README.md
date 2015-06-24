@@ -12,7 +12,7 @@ export AWS_SECRET_ACCESS_KEY='YOUR_AWS_API_SECRET_KEY'
 terraform remote config -backend=S3 \
  -backend-config="bucket=elodina-terraform" \
  -backend-config="key=tf-state" \
- -backend-config="region=us-west-1"
+ -backend-config="region=us-east-1"
 ```
 If you're expected to be the only person managing an infrastructure, you don't have to perform a remote config, so you can proceed directly to deployment step.
 

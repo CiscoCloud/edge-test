@@ -1,7 +1,7 @@
 # Placement config
 
 variable "region" {
-  default = "us-west-2"
+  default = "us-east-1"
 }
 
 # This is not a counter, it's rather a switch
@@ -10,9 +10,9 @@ variable "region" {
 
 variable "availability_zones" {
   default = {
-    us-west-2a = 1 
-    us-west-2b = 1
-    us-west-2c = 1
+    us-east-1a = 1 
+    us-east-1b = 1
+    us-east-1c = 1
   }
 }
 
@@ -26,9 +26,9 @@ variable "mesos_masters" {
   default = {
     instance_type = "c3.2xlarge"
     volume_size = "50"
-    us-west-2a = 1
-    us-west-2b = 1
-    us-west-2c = 1
+    us-east-1a = 1
+    us-east-1b = 1
+    us-east-1c = 1
   }
 }
 
@@ -36,9 +36,9 @@ variable "mesos_slaves" {
   default = {
     instance_type = "c3.2xlarge"
     volume_size = "200"
-    us-west-2a = 4
-    us-west-2b = 4
-    us-west-2c = 4
+    us-east-1a = 4
+    us-east-1b = 4
+    us-east-1c = 4
   }
 }
 
@@ -46,9 +46,9 @@ variable "exhibitors" {
   default = {
     instance_type = "c3.2xlarge"
     volume_size = "50"
-    us-west-2a = 1
-    us-west-2b = 1
-    us-west-2c = 1
+    us-east-1a = 1
+    us-east-1b = 1
+    us-east-1c = 1
   }
 }
 
@@ -66,8 +66,8 @@ variable "amis" {
   default = {
     # CentOS 7 HVM/EBS
     us-east-1 = "ami-96a818fe" 
-    us-west-1 = "ami-6bcfc42e"
-    us-west-2 = "ami-c7d092f7"
+    us-east-1 = "ami-6bcfc42e"
+    us-east-1 = "ami-c7d092f7"
   }
 }
 

@@ -5,4 +5,4 @@ maven_url: https://raw.githubusercontent.com/Netflix/exhibitor/master/exhibitor-
 defaultconfig: /etc/exhibitor/conf/default
 s3credentials: /etc/exhibitor/conf/credentials
 s3bucket: exhibitor-a948hgx3
-s3region: us-west-1
+s3region: us-east-1

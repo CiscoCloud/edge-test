@@ -1,9 +1,9 @@
 variable "region" {
-  default = "us-west-1"
+  default = "us-east-1"
 }
 
 variable "availability_zone" {
-  default = "us-west-1a"
+  default = "us-east-1a"
 }
 
 variable "vpc_id" {
@@ -33,7 +33,7 @@ variable "ingress_tcp_ports" {
 
 # Exhibitor
 variable "exhibitor_instance_type" {
-  default = "t2.small"
+  default = "m3.xlarge"
 }
 
 variable "exhibitor_count" {
@@ -41,17 +41,17 @@ variable "exhibitor_count" {
 }
 
 # Kafka
-variable "kafka_instance_type" {
-  default = "t2.small"
-}
+#variable "kafka_instance_type" {
+#  default = "t2.small"
+#}
 
-variable "kafka_count" {
-  default = "3"
-}
+#variable "kafka_count" {
+#  default = "3"
+#}
 
 # Mesos Master
 variable "mesos_master_instance_type" {
-  default = "t2.small"
+  default = "m3.large"
 }
 
 variable "mesos_master_count" {
@@ -60,11 +60,11 @@ variable "mesos_master_count" {
 
 # Mesos Slave
 variable "mesos_slave_instance_type" {
-  default = "t2.small"
+  default = "m3.large"
 }
 
 variable "mesos_slave_count" {
-  default = "3"
+  default = "10"
 }
 
 
