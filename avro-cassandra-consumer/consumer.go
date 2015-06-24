@@ -55,9 +55,9 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 			compositeKey := make(map[string]string)
 			keys := make([]string, 0)
 			values := make([]string, 0)
-			for key, value := range keyTags {
+			for _, key := range REQUIRED_KEYS {
 				keys = append(keys, key)
-				values = append(values, value.(string))
+				values = append(values, keyTags[key].(string))
 				compositeKey[strings.Join(keys, "_")] = strings.Join(values, "|")
 			}
 
