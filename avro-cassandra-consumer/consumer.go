@@ -11,6 +11,8 @@ import (
 	"sync"
 )
 
+var REQUIRED_KEYS = []string{"datacenter", "floor", "tile", "rack"}
+
 type AvroCassandraConsumerConfig struct {
 	CassandraHost     string
 	CassandraKeyspace string
@@ -44,11 +46,16 @@ func NewAvroCassandraConsumer(config *AvroCassandraConsumerConfig) *AvroCassandr
 	consumerConfig.ValueDecoder = kafka.NewKafkaAvroDecoder(config.SchemaRegistryUrl)
 	consumerConfig.Strategy = func(worker *kafka.Worker, message *kafka.Message, taskId kafka.TaskId) kafka.WorkerResult {
 		if decodedMessage, ok := message.DecodedValue.(*avro.GenericRecord); ok {
-			tags := decodedMessage.Get("tag").(map[string]interface{})
+			keyTags := getKeyTags(decodedMessage.Get("tag").(map[string]interface{}))
+			if len(keyTags) != len(REQUIRED_KEYS) {
+				kafka.Errorf(acConsumer, "Invalid message: required fields missing(have: %v, wanted: %v)", keyTags, REQUIRED_KEYS)
+				return kafka.NewProcessingFailedResult(taskId)
+			}
+
 			compositeKey := make(map[string]string)
 			keys := make([]string, 0)
 			values := make([]string, 0)
-			for key, value := range tags {
+			for key, value := range keyTags {
 				keys = append(keys, key)
 				values = append(values, value.(string))
 				compositeKey[strings.Join(keys, "_")] = strings.Join(values, "|")
@@ -121,6 +128,25 @@ func (this *AvroCassandraConsumer) Start() {
 	this.cassandraSession.Close()
 }
 
+func (this *AvroCassandraConsumer) Stop() <-chan bool {
+	return this.consumer.Close()
+}
+
+func (this *AvroCassandraConsumer) String() string {
+	return fmt.Sprintf("ac-consumer")
+}
+
+func getKeyTags(tags map[string]interface{}) map[string]interface{} {
+	keyTags := make(map[string]interface{})
+	for _, key := range REQUIRED_KEYS {
+		if value, ok := tags[key]; ok {
+			keyTags[key] = value
+		}
+	}
+
+	return keyTags
+}
+
 func mapToCassandraType(fieldType avro.Schema) string {
 	switch fieldType.Type() {
 	case avro.Array:
@@ -152,14 +178,6 @@ func mapToCassandraType(fieldType avro.Schema) string {
 	}
 
 	panic(fmt.Sprintf("Unsupported type: %s", fieldType.GetName()))
-}
-
-func (this *AvroCassandraConsumer) Stop() <-chan bool {
-	return this.consumer.Close()
-}
-
-func (this *AvroCassandraConsumer) String() string {
-	return fmt.Sprintf("ac-consumer")
 }
 
 func mapToCassandraValue(obj interface{}) string {
