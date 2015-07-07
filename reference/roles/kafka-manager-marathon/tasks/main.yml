@@ -1,0 +1,46 @@
+---
+- name: create kafka-manager marathon json
+  template:
+    src: "{{ item }}.json.j2"
+    dest: "/etc/marathon/{{ item }}.json"
+  with_items:
+    - kafka-manager
+  tags:
+    - kafka-manager-marathon
+
+- name: start kafka-manager marathon app
+  run_once: true
+  command: 'curl -X PUT -d@/etc/marathon/{{ item }}.json -H "Content-Type: application/json" http://localhost:18080/v2/apps/{{ item }}'
+  with_items:
+    - kafka-manager
+  tags:
+    - kafka-manager-marathon
+    - marathon-jobs
+
+- name: get kafka-manager app status
+  run_once: true
+  command: "curl -X GET http://localhost:{{ marathon_port }}/v2/apps/{{ kafka_manager_id }}"
+  register: kafka_manager_app_json
+  until: "'host' in kafka_manager_app_json.stdout"
+  retries: 2
+  delay: 5
+  tags:
+    - kafka-manager-marathon
+
+- name: register kafka-manager app status as fact
+  set_fact: 
+    kafka_manager_status: "{{ kafka_manager_app_json.stdout|from_json }}"
+  tags:
+    - kafka-manager-marathon
+
+- name: ADD kafka cluster
+  run_once: true
+  uri:
+    url: "http://{{ kafka_manager_status.app.tasks.0.host }}:{{ kafka_manager_status.app.tasks.0.ports.0 }}/clusters"
+    method: POST
+    body: name={{ kafka_manager_name }}&zkHosts={{ kafka_manager_zk_hosts }}&kafkaVersion={{ kafka_raw_version }}
+    body_format: raw
+    HEADER_Content-Type: "application/x-www-form-urlencoded"
+    status_code: 200
+  tags:
+    - kafka-manager-marathon
