@@ -15,18 +15,26 @@
   tags:
     - kafka-mesos-marathon-brokers
 
-- name: add kafka brokers
+- name: ADD brokers
   run_once: true
-  command: "curl -X GET http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/add?id={{ item }}&cpus={{ kafka_mesos_brokers_cpus }}&mem={{ kafka_mesos_brokers_mem }}&heap={{ kafka_mesos_brokers_heap }}"
+  uri:
+    url: "http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/add?id={{ item }}&cpus={{ kafka_mesos_brokers_cpus }}&mem={{ kafka_mesos_brokers_mem }}&heap={{ kafka_mesos_brokers_heap }}&bindAddress={{ kafka_mesos_bind_address }}"
+    return_content: yes
+  register: "add_broker_{{ item }}"
   with_items: kafka_mesos_brokers
+  ignore_errors: true
   changed_when: false
   tags:
     - kafka-mesos-marathon-brokers
 
-- name: start kafka brokers
+- name: START brokers
   run_once: true
-  command: "curl -X GET http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/start?id={{ item }}"
+  uri:
+    url: "http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/start?id={{ item }}"
+    return_content: yes
+  register: "start_broker_{{ item }}"
   with_items: kafka_mesos_brokers
+  ignore_errors: true
   changed_when: false
   tags:
     - kafka-mesos-marathon-brokers
