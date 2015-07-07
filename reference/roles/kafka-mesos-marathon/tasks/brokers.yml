@@ -23,7 +23,6 @@
   register: "add_broker_{{ item }}"
   with_items: kafka_mesos_brokers
   ignore_errors: true
-  changed_when: false
   tags:
     - kafka-mesos-marathon-brokers
 
@@ -35,6 +34,5 @@
   register: "start_broker_{{ item }}"
   with_items: kafka_mesos_brokers
   ignore_errors: true
-  changed_when: false
   tags:
     - kafka-mesos-marathon-brokers

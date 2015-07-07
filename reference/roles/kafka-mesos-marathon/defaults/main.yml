@@ -2,7 +2,9 @@
 kafka_mesos_mirror: https://kafka-mesos.s3.amazonaws.com
 kafka_mesos_version: 0.9.1.0
 kafka_mirror: https://kafka-mesos.s3.amazonaws.com
-kafka_version: 2.10-0.8.2.1
+scala_version: 2.10
+kafka_raw_version: 0.8.2.1
+kafka_version: "{{ scala_version }}-{{ kafka_raw_version }}"
 
 kafka_mesos_id: kafka-infrastructure
 kafka_mesos_cpus: 0.5
