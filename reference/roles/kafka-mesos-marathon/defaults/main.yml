@@ -1,8 +1,10 @@
 ---
 kafka_mesos_mirror: https://kafka-mesos.s3.amazonaws.com
-kafka_mesos_version: 0.9.0-beta
+kafka_mesos_version: 0.9.1.0
 kafka_mirror: https://kafka-mesos.s3.amazonaws.com
-kafka_version: 2.10-0.8.2.1
+scala_version: 2.10
+kafka_raw_version: 0.8.2.1
+kafka_version: "{{ scala_version }}-{{ kafka_raw_version }}"
 
 kafka_mesos_id: kafka-infrastructure
 kafka_mesos_cpus: 0.5
@@ -10,6 +12,7 @@ kafka_mesos_mem: 256
 kafka_mesos_storage: zk:/kafka-mesos
 kafka_mesos_broker_logs: "{{ kafka_mesos_work_dir }}/logs"
 kafka_mesos_api_port: 7000
+kafka_mesos_bind_address: if:eth0
 
 kafka_mesos_framework_name: "kafka infrastructure"
 kafka_mesos_framework_role: "infrastructure"
@@ -20,7 +23,7 @@ kafka_mesos_zk_connect: "zk://{{ kafka_mesos_zk_dns }}:{{ kafka_mesos_zk_port }}
 
 kafka_mesos_brokers: [0,1,2]
 kafka_mesos_brokers_constraints: "hostname=like:*"
-kafka_mesos_brokers_cpus: 2
+kafka_mesos_brokers_cpus: 1
 kafka_mesos_brokers_heap: 1024
 kafka_mesos_brokers_mem: 2048
 kafka_mesos_brokers_options: host.name=0.0.0.0

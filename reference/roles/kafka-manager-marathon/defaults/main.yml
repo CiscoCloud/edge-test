@@ -1,0 +1,14 @@
+---
+
+kafka_manager_id: kafka-manager
+kafka_manager_name: "{{ cluster }}"
+kafka_manager_docker_image: "stealthly/{{ kafka_manager_id }}"
+kafka_manager_cpus: 1.0
+kafka_manager_mem: 2048
+kafka_manager_api_port: 9000
+
+kafka_manager_zk_dns: "zookeeper.service.{{ consul_dc }}"
+kafka_manager_zk_port: 2181
+kafka_manager_zk_hosts: "{{ kafka_mesos_zk_dns }}:{{ kafka_mesos_zk_port }}"
+
+kafka_manager_secret: letmein

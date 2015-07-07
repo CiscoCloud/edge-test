@@ -1,0 +1,40 @@
+{
+  "id": "/kafka-manager",
+  "cpus": {{ kafka_manager_cpus }},
+  "mem": {{ kafka_manager_mem }},
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "{{ kafka_manager_docker_image }}",
+      "forcePullImage": true,
+      "network": "BRIDGE",
+      "portMappings": [
+        {
+          "containerPort": {{ kafka_manager_api_port }},
+          "hostPort": 0,
+          "protocol": "tcp"
+        }
+      ],
+      "privileged": false,
+      "parameters": [
+        { "key": "tty", "value": "true" }
+      ]
+    },
+    "volumes": []
+  },
+  "env": {
+    "APPLICATION_SECRET": "{{ kafka_manager_secret }}",
+    "ZK_HOSTS": "{{ kafka_manager_zk_hosts }}"
+  },
+  "healthChecks": [
+    {
+      "protocol": "HTTP",
+      "portIndex": 0,
+      "path": "/",
+      "gracePeriodSeconds": 120,
+      "intervalSeconds": 60,
+      "maxConsecutiveFailures": 0
+    }
+  ]
+}
