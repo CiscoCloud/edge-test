@@ -3,5 +3,6 @@
 - include: golang.yml
 - include: docker.yml
 - include: nginx.yml
+- include: pip.yml
 
 - meta: flush_handlers

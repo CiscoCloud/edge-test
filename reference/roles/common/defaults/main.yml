@@ -6,6 +6,8 @@ common_packages:
   - git
   - mercurial
   - docker
+  - python-pip
+  - python-virtualenv
 
 common_deb_packages:
   - oracle-java8-installer

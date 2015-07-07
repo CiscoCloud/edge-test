@@ -1,0 +1,10 @@
+---
+- name: install python modules 
+  pip: 
+    name: "{{ item }}"
+    state: present
+  with_items:
+    # required for ansible 'uri' module
+    - httplib2
+  tags:
+    - common
