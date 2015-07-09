@@ -1,38 +1,51 @@
 ---
-- name: get kafka-mesos app status
+- name: get scheduler status
   run_once: true
   command: "curl -X GET http://localhost:{{ marathon_port }}/v2/apps/{{ kafka_mesos_id }}"
   register: kafka_mesos_app_json
   until: "'host' in kafka_mesos_app_json.stdout"
   retries: 2
   delay: 5
+  changed_when: false
   tags:
     - kafka-mesos-marathon-brokers
 
-- name: register kafka-mesos app status as fact
+- name: register scheduler status as fact
   set_fact: 
     kafka_mesos_status: "{{ kafka_mesos_app_json.stdout|from_json }}"
   tags:
     - kafka-mesos-marathon-brokers
 
-- name: ADD brokers
+- name: wait for scheduler to settle
+  run_once: true
+  wait_for:
+    host: "{{ kafka_mesos_status.app.tasks.0.host }}"
+    port: "{{ kafka_mesos_api_port }}"
+    connect_timeout: 3
+    timeout: 30
+
+- name: add brokers
   run_once: true
   uri:
     url: "http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/add?id={{ item }}&cpus={{ kafka_mesos_brokers_cpus }}&mem={{ kafka_mesos_brokers_mem }}&heap={{ kafka_mesos_brokers_heap }}&bindAddress={{ kafka_mesos_bind_address }}"
     return_content: yes
-  register: "add_broker_{{ item }}"
+    status_code: "200,400"
   with_items: kafka_mesos_brokers
-  ignore_errors: true
+  register: add_brokers
+  changed_when: "add_brokers.status == 200"
+  failed_when: "add_brokers.status != 200 and 'Broker {{ item }} already exists' not in add_brokers.content"
   tags:
     - kafka-mesos-marathon-brokers
 
-- name: START brokers
+- name: start brokers
   run_once: true
   uri:
     url: "http://{{ kafka_mesos_status.app.tasks.0.host }}:{{ kafka_mesos_api_port }}/api/brokers/start?id={{ item }}"
     return_content: yes
-  register: "start_broker_{{ item }}"
+    status_code: "200,400"
   with_items: kafka_mesos_brokers
-  ignore_errors: true
+  register: start_brokers
+  changed_when: "start_brokers.status == 200"
+  failed_when: "start_brokers.status != 200 and 'broker {{ item }} is active' not in start_brokers.content"
   tags:
     - kafka-mesos-marathon-brokers
