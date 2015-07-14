@@ -47,6 +47,7 @@ func (this *App) eventsHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	this.connections[conn] = make(chan *Event)
+	go readLoop(conn)
 	for {
 		message := <-this.connections[conn]
 		err := conn.WriteJSON(message)
@@ -54,6 +55,15 @@ func (this *App) eventsHandler(w http.ResponseWriter, req *http.Request) {
 			delete(this.connections, conn)
 			conn.Close()
 			return
+		}
+	}
+}
+
+func readLoop(c *websocket.Conn) {
+	for {
+		if _, _, err := c.NextReader(); err != nil {
+			c.Close()
+			break
 		}
 	}
 }
@@ -71,12 +81,16 @@ func (this *App) eventSender() {
 
 func (this *App) sendToAll(message *Event) {
 	for _, events := range this.connections {
-		events <- message
+		select {
+		case events <- message:
+		default:
+		}
 	}
 }
 
 func startWebServer(port int) {
 	hostName, _ := os.Hostname()
+	fmt.Println("Starting server")
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", hostName, port), nil)
 	if err != nil {
 		log.Fatal(err)

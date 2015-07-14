@@ -11,7 +11,11 @@
 
 .line {
   fill: none;
-  stroke-width: 2.5px;
+  stroke-width: 1.5px;
+}
+
+.area {
+  	fill: lightsteelblue;
 }
 
 .tooltip {
@@ -21,6 +25,12 @@
   padding: 5px;
   border-radius: 8px;
   opacity: 0;
+}
+
+.data-point {
+	stroke: steelblue;
+	stroke-width: 2;
+	fill: #FFF;
 }
 
 .spin {

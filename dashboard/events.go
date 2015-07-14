@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -11,11 +12,12 @@ import (
 )
 
 type Event struct {
-	EventName string `json:"eventName"`
-	Second    int64  `json:"second"`
-	Operation string `json:"operation"`
-	Value     int64  `json:"value"`
-	Cnt       int64  `json:"count"`
+	EventName     string `json:"eventName"`
+	Second        int64  `json:"second"`
+	Framework     string `json:"framework"`
+	Latency       int64  `json:"value"`
+	ReceivedCount int64  `json:"count_received"`
+	SentCount     int64  `json:"count_sent"`
 }
 
 type EventFetcher struct {
@@ -23,6 +25,7 @@ type EventFetcher struct {
 	connection *gocql.Session
 	config     *EventFetcherConfig
 	consumer   *kafka.Consumer
+	connected  bool
 }
 
 func NewEventFetcher(config *EventFetcherConfig) *EventFetcher {
@@ -33,10 +36,16 @@ func NewEventFetcher(config *EventFetcherConfig) *EventFetcher {
 	cluster := gocql.NewCluster(config.CassandraHost)
 	cluster.Keyspace = "spark_analysis"
 	fetcher.connection, err = cluster.CreateSession()
+	fetcher.connected = true
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Can't connect to Cassandra, %q", err)
+		fetcher.connected = false
 	}
-	fetcher.consumer = fetcher.createConsumer()
+	fetcher.consumer, err = fetcher.createConsumer()
+	if err != nil {
+		log.Printf("Can't connect to Zookeeper, %q", err)
+		fetcher.connected = false
+	}
 
 	return fetcher
 }
@@ -45,7 +54,8 @@ func (this *EventFetcher) Close() {
 	this.connection.Close()
 }
 
-func (this *EventFetcher) createConsumer() *kafka.Consumer {
+func (this *EventFetcher) createConsumer() (*kafka.Consumer, error) {
+	fmt.Println(this.config.ZkConnect)
 	coordinatorConfig := kafka.NewZookeeperConfig()
 	coordinatorConfig.ZookeeperConnect = []string{this.config.ZkConnect}
 	coordinator := kafka.NewZookeeperCoordinator(coordinatorConfig)
@@ -63,11 +73,12 @@ func (this *EventFetcher) createConsumer() *kafka.Consumer {
 	consumerConfig.Strategy = func(_ *kafka.Worker, msg *kafka.Message, taskId kafka.TaskId) kafka.WorkerResult {
 		if record, ok := msg.DecodedValue.(*avro.GenericRecord); ok {
 			this.events <- &Event{
-				EventName: record.Get("eventname").(string),
-				Second:    record.Get("second").(int64),
-				Operation: record.Get("operation").(string),
-				Value:     record.Get("value").(int64),
-				Cnt:       record.Get("cnt").(int64),
+				EventName:     record.Get("eventname").(string),
+				Second:        record.Get("second").(int64),
+				Framework:     record.Get("framework").(string),
+				Latency:       record.Get("latency").(int64),
+				ReceivedCount: record.Get("received_count").(int64),
+				SentCount:     record.Get("sent_count").(int64),
 			}
 		} else {
 			return kafka.NewProcessingFailedResult(taskId)
@@ -76,27 +87,30 @@ func (this *EventFetcher) createConsumer() *kafka.Consumer {
 		return kafka.NewSuccessfulResult(taskId)
 	}
 
-	return kafka.NewConsumer(consumerConfig)
+	consumer, err := kafka.NewSlaveConsumer(consumerConfig)
+	return consumer, err
 }
 
 func (this *EventFetcher) EventHistory() []Event {
-	operations := "'avg10second', 'avg30second', 'avg1minute', 'avg5minute', 'avg10minute', 'avg15minute'"
+	frameworks := "'Golang', 'Dropwizard', 'Finagle', 'Spray', 'Play', 'Unfiltered', 'Netty'"
 	timestamp := time.Now().Add(-1 * time.Hour).Unix()
-	query := fmt.Sprintf("SELECT second, eventname, operation, cnt, value FROM events WHERE operation IN (%s) AND second > %d;", operations, timestamp)
+	query := fmt.Sprintf("SELECT second, eventname, framework, received_count, sent_count, latency FROM events WHERE framework IN (%s) AND second > %d;", frameworks, timestamp)
 	data := this.connection.Query(query).Iter()
 	var events []Event
 	var eventName string
 	var second int64
-	var operation string
-	var value int64
-	var cnt int64
-	for data.Scan(&second, &eventName, &operation, &cnt, &value) {
+	var framework string
+	var latency int64
+	var received_count int64
+	var sent_count int64
+	for data.Scan(&second, &eventName, &framework, &received_count, &sent_count, &latency) {
 		event := Event{
-			Second:    second,
-			EventName: eventName,
-			Operation: operation,
-			Cnt:       cnt,
-			Value:     value,
+			Second:        second,
+			EventName:     eventName,
+			Framework:     framework,
+			ReceivedCount: received_count,
+			SentCount:     sent_count,
+			Latency:       latency,
 		}
 		events = append(events, event)
 	}
@@ -107,8 +121,14 @@ func (this *EventFetcher) EventHistory() []Event {
 }
 
 func (this *EventFetcher) startFetch() {
+	if !this.connected {
+		return
+	}
 	topicCount := make(map[string]int)
-	topicCount[fmt.Sprintf("%s-latencies", this.config.Topic)] = 1
+	topics := strings.Split(this.config.Topics, ",")
+	for _, topic := range topics {
+		topicCount[fmt.Sprintf("%s-latencies", topic)] = 1
+	}
 	this.consumer.StartStatic(topicCount)
 }
 
@@ -116,5 +136,5 @@ type EventFetcherConfig struct {
 	CassandraHost     string
 	ZkConnect         string
 	SchemaRegistryUrl string
-	Topic             string
+	Topics            string
 }
