@@ -17,3 +17,4 @@ Components:
 * [Go-perf](https://github.com/CiscoCloud/edge-test/tree/master/go-perf) - simple go tool to create load simulating multiple concurrent connections.
 * [Scripts](https://github.com/CiscoCloud/edge-test/tree/master/scripts) - simple bash scripts to create load (using curl).
 * [Vagrant](https://github.com/CiscoCloud/edge-test/tree/master/vagrant) - contains vagrant scripts to spin up Mesos locally.
+* [Dashboard](https://github.com/CiscoCloud/edge-test/tree/master/dashboard) - simple dashboard to view frameworks statistics (requests per second and latency) in realtime.
