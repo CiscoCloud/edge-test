@@ -92,7 +92,7 @@ func (this *EventFetcher) createConsumer() (*kafka.Consumer, error) {
 }
 
 func (this *EventFetcher) EventHistory() []Event {
-	frameworks := "'Golang', 'Dropwizard', 'Finagle', 'Spray', 'Play', 'Unfiltered'"
+	frameworks := "'Golang', 'Dropwizard', 'Finagle', 'Spray', 'Play', 'Unfiltered', 'Netty'"
 	timestamp := time.Now().Add(-1 * time.Hour).Unix()
 	query := fmt.Sprintf("SELECT second, eventname, framework, received_count, sent_count, latency FROM events WHERE framework IN (%s) AND second > %d;", frameworks, timestamp)
 	data := this.connection.Query(query).Iter()

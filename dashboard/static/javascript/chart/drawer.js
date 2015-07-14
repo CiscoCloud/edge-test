@@ -106,7 +106,7 @@
           .text(chart.field);
 
       var color = d3.scale.category10();
-      var frameworks = ['Golang', 'Dropwizard', 'Finagle', 'Spray', 'Play', 'Unfiltered'];
+      var frameworks = ['Golang', 'Dropwizard', 'Finagle', 'Spray', 'Play', 'Unfiltered', 'Netty'];
 
       for (var framework in chart.events) {
         color.domain(frameworks);
